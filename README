@@ -1,4 +1,9 @@
-This is the REAME file for this project.
+************************************************
+            DUMB DFS
+************************************************
 
-TODO:
-Need to add LICENCE to it.
+A very simple distributed filesystem.
+Making the basic functionality to work on a medium latency network(need to research more on this).
+
+
+

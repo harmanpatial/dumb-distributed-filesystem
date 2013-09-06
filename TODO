@@ -5,3 +5,10 @@ TODO:
 3. Focus on making the whole project modular.
 4. Decide on the protocol to use. Most probably on top of UDP.
 5. Creating the network engine that would handle the packets.
+
+Long term goals
+
+1. Establish trade offs and make decisions.
+2. Make sure that we understand the tradeoffs and how to approach them.
+
+EVERTHING IS FOCUSED TOWARDS WHAT KIND OF NETWORK AND DATA WE HAVE TO DEAL WITH.
