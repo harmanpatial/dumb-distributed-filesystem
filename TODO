@@ -1,0 +1,7 @@
+TODO:
+
+1. Create sub directories for each specific module.
+2. Decide and implement a leader selection algorithm.
+3. Focus on making the whole project modular.
+4. Decide on the protocol to use. Most probably on top of UDP.
+5. Creating the network engine that would handle the packets.
