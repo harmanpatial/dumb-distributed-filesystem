@@ -1,5 +1,5 @@
 /*
- * network.cpp
+ * ddfs_network.h
  *
  * Module for managing network communication.
  *
@@ -14,6 +14,7 @@
  *
  * TODO:
  * 1. Return type should be a of class type.
+ * 2. Look into zero copy implementation.
  */
 
 
@@ -47,7 +48,6 @@ protected:
 	virtual DDFS_STATUS checkConnection() = 0;
 	/*
 	 * DDFS_OK - Success.
-	 * DDFS_HOST_DOWN - Host is down.
 	 * DDFS_FAILURE - Failure.
 	 */
 	virtual DDFS_STATUS subscribe(void (*)(int)) = 0;
