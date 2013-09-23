@@ -7,16 +7,14 @@
  * data management.
  * Primary responsibility of this module :
  *
- * 1. Open/Close connection.
- * 2. Send/Receive data from network.
- * 3. Notify other modules about the lost of other nodes in the network/cluster.
- * 4. Network congestion detection and prevention.
- *
  * TODO:
  * 1. Return type should be a of class type.
  * 2. Look into zero copy implementation.
+ *
+ * Author Harman Patial <harman.patial@gmail.com>
  */
 #include <stdio>
+#include <stdlib.h>
 
 class UdpConnection : public Network {
 protected:
