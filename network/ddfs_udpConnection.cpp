@@ -16,61 +16,150 @@
 #include <stdio>
 #include <stdlib.h>
 
+#include <ddfs_network.h>
+
+#define DDFS_SERVER_PORT	5000
+
+using namespace ddfsLogger;
+
 class UdpConnection : public Network {
 protected:
-	/*
-	 * DDFS_OK - Success.
-	 * DDFS_FAILURE - Failure.
+	/* openConnection				*/
+	/**
+	 * @brief - Open a UDP connection.
+	 *
+	 * Open a UDP connection that would be used to
+	 * communicate with other nodes in the DFS.
+	 *
+	 * @return DDFS_OK	Success
+	 * @return DDFS_FAILURE	Failure
 	 */
-	DDFS_STATUS openConnection() {
-		return DDFS_FAILURE;
-	}
-	/*
-	 * DDFS_OK - Success.
-	 * DDFS_NETWORK_RETRY - Retry after some time.
-	 * DDFS_HOST_DOWN - Host is down.
-	 * DDFS_FAILURE - Failure.
-	 */
-	DDFS_STATUS sendData(void *d) {
-		return DDFS_FAILURE;
-	}
-	/*
-	 * DDFS_OK - Success.
-	 * DDFS_HOST_DOWN - Host is down.
-	 * DDFS_FAILURE - Failure.
-	 */
-	DDFS_STATUS *receiveData() {
-		return DDFS_FAILURE;
-	}
-	/*
-	 * DDFS_OK - Success.
-	 * DDFS_HOST_DOWN - Host is down.
-	 * DDFS_FAILURE - Failure.
-	 */
-	DDFS_STATUS checkConnection() = 0 {
-		return DDFS_FAILURE;
-	}
-	/*
-	 * DDFS_OK - Success.
-	 * DDFS_FAILURE - Failure.
-	 */
-	virtual DDFS_STATUS subscribe(void (*)(int)) {
-		return DDFS_FAILURE;
-	}
-	/*
-	 * DDFS_OK - Success.
-	 * DDFS_FAILURE - Failure.
-	 */
-	virtual DDFS_FAILURE closeConnection() {
-		return DDFS_FAILURE;
-	}
-	/* For performance sake, we should share memory and
-	 * should be doing zero copy. But for now, just copy
-	 * data over
-	 */
-	virtual void * copyData(void *des, int size) = 0 {
-		return DDFS_FAILURE;
-	}
+	ddfsStatus openConnection() {
+		struct sockaddr_in server_addr , client_addr;
 
+		if (socket(AF_INET, SOCK_DGRAM, 0) == -1) {
+			FileLogger("Unable to open socket");
+			return (ddfsStatus(DDFS_FAILURE));
+		}
 
+		server_addr.sin_family = AF_INET;
+		server_addr.sin_port = htons(DDFS_SERVER_PORT);
+		server_addr.sin_addr.s_addr = INADDR_ANY;
+		bzero(&(server_addr.sin_zero),8);
+
+		/* Bind socket with the server */
+		if (bind(sock,(struct sockaddr *)&server_addr,
+		    sizeof(struct sockaddr)) == -1)
+		{
+		    perror("Unable to Bind");
+			return (ddfsStatus(DDFS_FAILURE));
+		}
+
+		return (ddfsStatus(DDFS_FAILURE));
+	}
+	/*	sendData			*/
+	/**
+	 * @brief   Send data across.
+	 *
+	 * Send data from the connection that has been
+	 * previously established.
+	 * @param   data		Pointer to the data that needs to be send
+	 * @param   size		Size of the data to be send
+	 * @param   fn			The callback function. If this is NULL, this is
+	 * 				synchronous call.
+	 * 				If this fn is not NULL, this is asynchronous calls.
+	 *
+	 * @return  DDFS_OK		Success
+	 * @return  DDFS_NETWORK_RETRY	Retry after some time
+	 * @return  DDFS_HOST_DOWN	Host is down
+	 * @return  DDFS_FAILURE	Failure
+	 */
+	ddfsStatus sendData(void *data, int size, void (*fn)(int)) {
+		return (ddfsStatus(DDFS_FAILURE));
+	}
+	/*	receiveData			*/
+	/**
+	 * @brief   Receive data from the connection.
+	 *
+	 * Receive data from the connection that has been
+	 * previously established.
+	 *
+	 * @return  DDFS_OK		Success
+	 * @return  DDFS_HOST_DOWN	Host is down
+	 * @return  DDFS_FAILURE		Failure
+	 */
+	ddfsStatus *receiveData() {
+		return (ddfsStatus(DDFS_FAILURE));
+	}
+	/*	checkConnection			*/
+	/**
+	 * @brief   Check the connection.
+	 *
+	 * Check the connection that has been
+	 * previously established.
+	 *
+	 * @return   DDFS_OK		Success
+	 * @return   DDFS_HOST_DOWN	Host is down
+	 * @return   DDFS_FAILURE	Failure
+	 */
+	ddfsStatus checkConnection() = 0 {
+		return (ddfsStatus(DDFS_FAILURE));
+	}
+	/*	subscribe			*/
+	/**
+	 * @brief   Subscribe the connection.
+	 *
+	 * Subscribe to the connection.
+	 * If data is received from this connection, the
+	 * registered callback function would be invoked.
+	 *
+	 * @param fn The callback function to be registered.
+	 *
+	 * @see copyData().
+	 *
+	 * @return   DDFS_OK		Success
+	 * @return   DDFS_FAILURE	Failure
+	 */
+	ddfsStatus subscribe(void (*)(int)) {
+		return (ddfsStatus(DDFS_FAILURE));
+	}
+	/*	closeConnection			*/
+	/**
+	 * @brief   Close the connection.
+	 *
+	 * Close the connection.
+	 * Free all the resources utilized for this connection.
+	 *
+	 * @note Any outstanding data would be thrown away.
+	 *
+	 * @return   DDFS_OK		Success
+	 * @return   DDFS_FAILURE	Failure
+	 */
+	ddfsStatus closeConnection() {
+		return (ddfsStatus(DDFS_FAILURE));
+	}
+	/*	copyData			*/
+	/**
+	 * @brief   Copy inbound data in the connection.
+	 *
+	 * Copy the data being received by the connection.
+	 *
+	 * @note If you in the callback function passed during the
+	 *       subscription, then use this function to get the data.
+	 *
+	 * @note For performance sake, we should share memory and
+	 * 	 should be doing zero copy. But for now, just copy
+	 * 	 data over.
+	 *
+	 * @param[in]  des		Destination pointer
+	 * @param[in]  requestedSize	The requested size of data
+	 * @param[in]  actualSize	Actual size which we were able to copy
+	 *
+	 * @return   DDFS_OK			Success
+	 * @return   DDFS_NETWORK_UNDERRUN	Data from connection is less than asked for
+	 * @return   DDFS_FAILURE		Failure
+	 */
+	ddfsStatus copyData(void *des, int requestedSize, int *actualSize) {
+		return (ddfsStatus(DDFS_FAILURE));
+	}
 };

@@ -1,5 +1,5 @@
-/*
- * ddfs_network.h
+/**
+ * \file ddfs_network.h
  *
  * Module for managing network communication.
  *
@@ -23,101 +23,114 @@ class Network {
 	Network();
 	~Network();
 protected:
-	/*
-	 * DDFS_OK - Success.
-	 * DDFS_FAILURE - Failure.
+	/* @sa openConnection				*/
+	/**
+	 * @sa openConnection
+	 *
+	 * @brief - Open a UDP connection.
+	 *
+	 * Open a UDP connection that would be used to
+	 * communicate with other nodes in the DFS.
+	 *
+	 * @return DDFS_OK	Success
+	 * @return DDFS_FAILURE	Failure
 	 */
-	virtual DDFS_STATUS openConnection() = 0;
-	/*
-	 * Name : sendData
+	virtual ddfsStatus openConnection() = 0;
+	/*	sendData			*/
+	/**
+	 * @brief   Send data across.
 	 *
-	 * Send data across from this network connection.
+	 * Send data from the connection that has been
+	 * previously established.
 	 *
-	 * Parameter :
+	 * @param   data		Pointer to the data that needs to be send
+	 * @param   size		Size of the data to be send
+	 * @param   fn			The callback function. If this is NULL, this is
+	 * 				synchronous call.
+	 * 				If this fn is not NULL, this is asynchronous calls.
 	 *
-	 * data : The pointer to the data region.
-	 * size : The size of the data to send.
-	 * fn : callback function that would be called when
-	 * 	host receives response for this data.
-	 *
-	 * DDFS_OK - Success.
-	 * DDFS_NETWORK_RETRY - Retry after some time.
-	 * DDFS_HOST_DOWN - Host is down.
-	 * DDFS_FAILURE - Failure.
+	 * @return  DDFS_OK		Success
+	 * @return  DDFS_NETWORK_RETRY	Retry after some time
+	 * @return  DDFS_HOST_DOWN	Host is down
+	 * @return  DDFS_FAILURE	Failure
 	 */
-	virtual DDFS_STATUS sendData(void *data, int size, void (*fn)(int)) = 0;
-	/*
-	 * Name : receiveData
+	virtual ddfsStatus sendData(void *data, int size, void (*fn)(int)) = 0;
+	/*	receiveData			*/
+	/**
 	 *
-	 * Receive data from this network connection.
+	 * @brief Receive data from this network connection.
 	 *
-	 * Parameter :
+	 * @param   des			The pointer to the data region
+	 * @param   requestedSize	The size of the data to send
+	 * @param   actualSize		Actual size of data currently received
 	 *
-	 * des : The pointer to the data region.
-	 * requestedSize : The size of the data to send.
-	 * actualSize : Actual size of data currently received.
-	 *
-	 * Return :
-	 * DDFS_OK - Success.
-	 * DDFS_HOST_DOWN - Host is down.
-	 * DDFS_NETWORK_UNDERRUN - Received data is less than requested for.
-	 * 			   actualSize would be filled with the actual data size.
-	 * DDFS_NETWORK_OVERRUN - Received data is more than requested for.
-	 * 			  actualSize would be filled with the actual data size.
-	 * DDFS_FAILURE - Failure.
+	 * @return  DDFS_OK			Success
+	 * @return  DDFS_HOST_DOWN		Host is down
+	 * @return  DDFS_NETWORK_UNDERRUN	Received data is less than requested for.
+	 * 			   		actualSize would be filled with the actual data size
+	 * @return  DDFS_NETWORK_OVERRUN	Received data is more than requested for.
+	 * 			  		actualSize would be filled with the actual data size.
+	 * @return  DDFS_FAILURE		Failure.
 	 */
-	virtual DDFS_STATUS *receiveData(void *des, int requestedSize, int *actualSize) = 0;
-	/*
-	 * Name : checkConnection
+	virtual ddfsStatus receiveData(void *des, int requestedSize, int *actualSize) = 0;
+
+	/*	checkConnection			*/
+	/**
+	 * @brief   Check the connection.
 	 *
-	 * Check the current state of the connection.
+	 * Check the connection that has been
+	 * previously established.
 	 *
-	 * Parameter :
-	 *
-	 * des : The pointer to the data region.
-	 * requestedSize : The size of the data to send.
-	 * actualSize : Actual size of data currently received.
-	 *
-	 * DDFS_OK - Success.
-	 * DDFS_HOST_DOWN - Host is down.
-	 * DDFS_FAILURE - Failure.
+	 * @return   DDFS_OK		Success
+	 * @return   DDFS_HOST_DOWN	Host is down
+	 * @return   DDFS_FAILURE	Failure
 	 */
-	virtual DDFS_STATUS checkConnection() = 0;
-	/*
-	 * Name : subscribe
+	virtual ddfsStatus checkConnection() = 0;
+
+	/*	subscribe			*/
+	/**
+	 * @brief   Subscribe the connection.
 	 *
-	 * Subscribe to this network connection.
-	 * Register a callback function that would be called anytime
-	 * data is received from this network connection.
+	 * Subscribe to the connection.
+	 * If data is received from this connection, the
+	 * registered callback function would be invoked.
 	 *
-	 * Return :
-	 * DDFS_OK - Success.
-	 * DDFS_FAILURE - Failure.
+	 * @note .
+	 *
+	 * @return   DDFS_OK		Success
+	 * @return   DDFS_FAILURE	Failure
 	 */
-	virtual DDFS_STATUS subscribe(void (*)(int)) = 0;
-	/*
-	 * Name : closeConnection
+	virtual ddfsStatus subscribe(void (*)(int)) = 0;
+	/*	closeConnection			*/
+	/**
+	 * @brief   Close the connection.
 	 *
-	 * Close a network connection.
+	 * Close the connection.
+	 * Free all the resources utilized for this connection.
 	 *
-	 * Return:
-	 * VMK_OK - Success.
-	 * VMK_FAILURE - Failure.
+	 * @note Any outstanding data would be thrown away.
+	 *
+	 * @return   DDFS_OK		Success
+	 * @return   DDFS_FAILURE	Failure
 	 */
-	virtual DDFS_STATUS closeConnection() = 0;
-	/*
-	 * Name : closeConnection
+	virtual ddfsStatus closeConnection() = 0;
+	/*	copyData			*/
+	/**
+	 * @brief   Copy inbound data in the connection.
 	 *
-	 * For performance sake, we should share memory and
-	 * should be doing zero copy. But for now, just copy
-	 * data over.
+	 * Copy the data being received by the connection.
 	 *
-	 * NOTE :
-	 * Not sure what purpose does this interface fulfills.
+	 * @note For performance sake, we should share memory and
+	 * 	 should be doing zero copy. But for now, just copy
+	 * 	 data over.
 	 *
-	 * TODO :
-	 * Write a better description for this call.
+	 * @param[in]  des		Destination pointer
+	 * @param[in]  requestedSize	The requested size of data
+	 * @param[in]  actualSize	Actual size which we were able to copy
 	 *
+	 * @return   DDFS_OK			Success
+	 * @return   DDFS_NETWORK_UNDERRUN	Data from connection is less than asked for
+	 * @return   DDFS_FAILURE		Failure
 	 */
-	virtual DDFS_STATUS copyData(void *des, int requestedSize, int *actualSize) = 0;
+	virtual ddfsStatus copyData(void *des, int requestedSize, int *actualSize) = 0;
 };
