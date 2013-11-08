@@ -19,6 +19,10 @@
  * Author Harman Patial <harman.patial@gmail.com>
  */
 
+#ifndef DDFS_NETWORK_H
+#define DDFS_NETWORK_H
+#include "../global/ddfs_status.h"
+
 class Network {
 	Network();
 	~Network();
@@ -134,3 +138,5 @@ protected:
 	 */
 	virtual ddfsStatus copyData(void *des, int requestedSize, int *actualSize) = 0;
 };
+
+#endif /* DDFS_NETWORK_H */

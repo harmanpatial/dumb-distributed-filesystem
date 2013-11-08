@@ -54,7 +54,7 @@ class ddfsLogger {
 		friend ddfsLogger &operator << (ddfsLogger &logger, const char *text);
 
 	private:
-		static ddfsLogger&	single_logger;
+		static ddfsLogger	*singleton_logger;
 		static std::ofstream	myFile;
 		unsigned int		numWarnings;
 		unsigned int		numErrors;

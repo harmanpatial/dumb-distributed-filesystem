@@ -13,14 +13,17 @@
  *
  * Author Harman Patial <harman.patial@gmail.com>
  */
-#include <stdio>
-#include <stdlib.h>
 
-#include <ddfs_network.h>
+#include <iostream>
+#include <netinet/in.h>
+
+#include "ddfs_network.h"
+#include "../logger/ddfs_fileLogger.h"
+#include "../global/ddfs_status.h"
 
 #define DDFS_SERVER_PORT	5000
 
-using namespace ddfsLogger;
+ddfsLogger &global_logger = ddfsLogger::getInstance();
 
 class UdpConnection : public Network {
 protected:
@@ -36,9 +39,10 @@ protected:
 	 */
 	ddfsStatus openConnection() {
 		struct sockaddr_in server_addr , client_addr;
+		int sockfd;
 
 		if (socket(AF_INET, SOCK_DGRAM, 0) == -1) {
-			FileLogger("Unable to open socket");
+			global_logger << ddfsLogger::LOG_WARNING << "Unable to open socket";
 			return (ddfsStatus(DDFS_FAILURE));
 		}
 
@@ -48,7 +52,7 @@ protected:
 		bzero(&(server_addr.sin_zero),8);
 
 		/* Bind socket with the server */
-		if (bind(sock,(struct sockaddr *)&server_addr,
+		if (bind(sockfd,(struct sockaddr *)&server_addr,
 		    sizeof(struct sockaddr)) == -1)
 		{
 		    perror("Unable to Bind");
@@ -88,7 +92,7 @@ protected:
 	 * @return  DDFS_HOST_DOWN	Host is down
 	 * @return  DDFS_FAILURE		Failure
 	 */
-	ddfsStatus *receiveData() {
+	ddfsStatus receiveData(void *des, int requestedSize, int *actualSize) {
 		return (ddfsStatus(DDFS_FAILURE));
 	}
 	/*	checkConnection			*/
@@ -102,7 +106,7 @@ protected:
 	 * @return   DDFS_HOST_DOWN	Host is down
 	 * @return   DDFS_FAILURE	Failure
 	 */
-	ddfsStatus checkConnection() = 0 {
+	ddfsStatus checkConnection() {
 		return (ddfsStatus(DDFS_FAILURE));
 	}
 	/*	subscribe			*/

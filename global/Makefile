@@ -4,7 +4,7 @@ CFLAGS=-c -Wall
 LDFLAGS=
 
 SOURCES = ddfs_status.cpp ddfs_global.cpp
-INCLUDE = ddfs_status.h ddfs_global.h ../logges/ddfs_logger.h
+INCLUDE = ddfs_status.h ddfs_global.h ../logger/ddfs_logger.h
 OBJLIBS	= 
 LIBS	= -L.
 RM	= /bin/rm

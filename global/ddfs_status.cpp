@@ -6,7 +6,7 @@
  * Author Harman Patial <harman.patial@gmail.com>
  */
 
-#include <iostream.h>
+#include <iostream>
 #include "ddfs_status.h"
 
 using namespace std;

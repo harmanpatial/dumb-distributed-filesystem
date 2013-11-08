@@ -8,8 +8,6 @@
  * @author Harman Patial <harman.patial@gmail.com>
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string>
 
 #include "ddfs_global.h"
@@ -18,7 +16,7 @@ ddfsStatus ddfsGlobal::init(char *log_file) {
 	/* Open log file and write the starting message */
 	char buf[64];
 
-	global_logger = ddfsLogger::getInstance("/tmp/ddfs.log");
+	global_logger = ddfsLogger::getInstance();
 
 	// Writing warnings or errors to file is very easy and C++ style
 	global_logger << ddfsLogger::LOG_WARNING << "DDFS(" << major_version << "."

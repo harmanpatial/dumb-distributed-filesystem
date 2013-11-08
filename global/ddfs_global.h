@@ -10,8 +10,7 @@
 #ifndef DDFS_GLOBAL_H
 #define DDFS_GLOBAL_H
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <iostream>
 #include <string>
 
 #include "ddfs_status.h"
