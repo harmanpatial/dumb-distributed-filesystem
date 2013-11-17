@@ -29,7 +29,7 @@
  */
 class ddfsGlobal {
 public:
-	/*		init			*/
+	/*		initialize		*/
 	/**
 	 *
 	 * @note If log_file is NULL, the default file name would be created.
@@ -39,7 +39,7 @@ public:
 	 * @return  DDFS_OK		Success
 	 * @return  DDFS_FAILURE	Failure, if not able to create/open log file.
 	 */
-	static ddfsStatus init(char *log_file);
+	static ddfsStatus initialize(string log_file);
 
 private:
 	static ddfsLogger &global_logger;

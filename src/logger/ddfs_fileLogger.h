@@ -14,6 +14,9 @@
 #define DDFS_FILE_LOGGER_H
 
 #include <fstream>
+#include <string>
+
+using namespace std;
 
 /**
  * @class ddfsLogger
@@ -40,7 +43,7 @@ class ddfsLogger {
 		 *
 		 * @return reference to a class object
 		 */
-		static ddfsLogger& getInstance(const char *fname = "/tmp/ddfs.log");
+		static ddfsLogger& getInstance(const string fname = "/tmp/ddfs.log");
 		
 		/* Log Message */
 		friend ddfsLogger &operator << (ddfsLogger &logger, const e_logType l_type);
@@ -51,7 +54,7 @@ class ddfsLogger {
 
 		// Overload << operator using C style strings
 		// No need for std::string objects here
-		friend ddfsLogger &operator << (ddfsLogger &logger, const char *text);
+		friend ddfsLogger &operator << (ddfsLogger &logger, const string text);
 
 	private:
 		static ddfsLogger	*singleton_logger;
@@ -60,7 +63,7 @@ class ddfsLogger {
 		unsigned int		numErrors;
 
 		// Explicit private Constructor.
-		explicit ddfsLogger (const char *fname);
+		explicit ddfsLogger (string fname);
 
 		// Private Destructor.
 		~ddfsLogger ();

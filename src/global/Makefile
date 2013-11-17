@@ -3,9 +3,9 @@ CC=g++
 CFLAGS=-c -Wall
 LDFLAGS=
 
-SOURCES = ddfs_udpConnection.cpp
-INCLUDE = ddfs_status.h ../logges/ddfs_logger.h ddfs_network.h
-OBJLIBS	= 
+SOURCES = ddfs_status.cpp ddfs_global.cpp
+INCLUDE = ddfs_status.h ddfs_global.h ../logger/ddfs_logger.h
+OBJLIBS	= ../ddfs_fileLogger.o
 LIBS	= -L.
 RM	= /bin/rm
 

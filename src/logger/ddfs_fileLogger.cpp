@@ -17,8 +17,9 @@
 #include "ddfs_fileLogger.h"
 
 ddfsLogger *ddfsLogger::singleton_logger= 0;
+std::ofstream ddfsLogger::myFile;
 
-ddfsLogger& ddfsLogger::getInstance(const char *fname) {
+ddfsLogger& ddfsLogger::getInstance(const string fname) {
 	if(singleton_logger == NULL)
 		singleton_logger = new ddfsLogger(fname);
 	return *singleton_logger;
@@ -56,7 +57,7 @@ ddfsLogger &operator << (ddfsLogger &logger, const ddfsLogger::e_logType l_type)
 
 // Overload << operator using C style strings
 // No need for std::string objects here
-ddfsLogger &operator << (ddfsLogger &logger, const char *text) {
+ddfsLogger &operator << (ddfsLogger &logger, string text) {
 	logger.myFile << text << std::endl;
 	return logger;
 }
@@ -67,11 +68,11 @@ ddfsLogger &operator << (ddfsLogger &logger, int int_value) {
 }
 
 // Explicit private Constructor.
-ddfsLogger::ddfsLogger (const char *fname)
+ddfsLogger::ddfsLogger (string fname)
 :   numWarnings (0U),
   numErrors (0U)
 {
-	myFile.open(fname);
+	myFile.open(fname.c_str());
 	// Write the first lines
 	myFile << "DDFS Log file created" << std::endl << std::endl;
 }

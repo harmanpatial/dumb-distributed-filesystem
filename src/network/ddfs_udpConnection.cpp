@@ -38,7 +38,7 @@ protected:
 	 * @return DDFS_FAILURE	Failure
 	 */
 	ddfsStatus openConnection() {
-		struct sockaddr_in server_addr , client_addr;
+		struct sockaddr_in server_addr, client_addr;
 		int sockfd;
 
 		if (socket(AF_INET, SOCK_DGRAM, 0) == -1) {
