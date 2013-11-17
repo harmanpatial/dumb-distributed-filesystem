@@ -8,7 +8,7 @@ RM = /bin/rm
 CP = /bin/cp
 
 DIRS	= network
-TARGET	= ddfs.so
+TARGET	= libddfs.so
 OBJS	= ./global/ddfs_status.o ./logger/ddfs_fileLogger.o ./global/ddfs_global.o ./network/ddfs_udpConnection.o
 OBJLIBS	= 
 LIBS	= -L.

@@ -15,6 +15,7 @@
  */
 
 #include <iostream>
+#include <strings.h>
 #include <netinet/in.h>
 
 #include "ddfs_network.h"

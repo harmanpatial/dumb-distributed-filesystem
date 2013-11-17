@@ -48,6 +48,7 @@ private:
 	ddfsGlobal(ddfsGlobal const&);     // Don't Implement
 	void operator=(ddfsGlobal const&); // Don't implement
 
+	static int initialization_done;
 	/*! \var int major_version
 	 * Major Version Number
 	 */
@@ -62,5 +63,7 @@ private:
 	const static int patch_version = 0;
 	~ ddfsGlobal();
 };
+
+extern ddfsStatus initialize(string log_file);
 
 #endif /* Ending DDFS_GLOBAL_H */

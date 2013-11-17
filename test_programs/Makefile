@@ -13,4 +13,4 @@ all : $(ECHO)
 	
 
 clean:
-	$(RM) -f $(OBJS)
+	$(RM) -f test1 
