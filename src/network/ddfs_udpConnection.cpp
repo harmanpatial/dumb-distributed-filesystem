@@ -5,11 +5,9 @@
  *
  * This is the module that would be responsible for network
  * data management.
- * Primary responsibility of this module :
  *
  * TODO:
- * 1. Return type should be a of class type.
- * 2. Look into zero copy implementation.
+ * 1. Look into zero copy implementation.
  *
  * Author Harman Patial <harman.patial@gmail.com>
  */

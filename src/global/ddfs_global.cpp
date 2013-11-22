@@ -18,7 +18,7 @@ using namespace std;
 ddfsLogger& ddfsGlobal::global_logger = ddfsLogger::getInstance();
 int ddfsGlobal::initialization_done = 0;
 
-ddfsStatus ddfsGlobal::initialize(string log_file) {
+ddfsStatus ddfsGlobal::initialize() {
 	/* Open log file and write the starting message */
 	char buf[64];
 
@@ -29,7 +29,8 @@ ddfsStatus ddfsGlobal::initialize(string log_file) {
 
 	// Writing warnings or errors to file is very easy and C++ style
 	global_logger << ddfsLogger::LOG_WARNING << "DDFS(" << major_version << "."
-				<< minor_version  << "." << patch_version  << ") -- STARTING.\n";
+				<< minor_version  << "." << patch_version
+				<< ") -- Initialization complete.\n";
 
 	ddfsGlobal::initialization_done = 1;
 

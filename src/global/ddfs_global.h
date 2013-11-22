@@ -34,12 +34,10 @@ public:
 	 *
 	 * @note If log_file is NULL, the default file name would be created.
 	 *
-	 * @param[in]  log_file		Full path of the log file
-	 *
 	 * @return  DDFS_OK		Success
 	 * @return  DDFS_FAILURE	Failure, if not able to create/open log file.
 	 */
-	static ddfsStatus initialize(string log_file);
+	static ddfsStatus initialize();
 
 private:
 	static ddfsLogger &global_logger;

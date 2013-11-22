@@ -58,12 +58,12 @@ ddfsLogger &operator << (ddfsLogger &logger, const ddfsLogger::e_logType l_type)
 // Overload << operator using C style strings
 // No need for std::string objects here
 ddfsLogger &operator << (ddfsLogger &logger, string text) {
-	logger.myFile << text << std::endl;
+	logger.myFile << text;
 	return logger;
 }
 
 ddfsLogger &operator << (ddfsLogger &logger, int int_value) {
-	logger.myFile << int_value << std::endl;
+	logger.myFile << int_value;
 	return logger;
 }
 
@@ -72,9 +72,12 @@ ddfsLogger::ddfsLogger (string fname)
 :   numWarnings (0U),
   numErrors (0U)
 {
-	myFile.open(fname.c_str());
+	myFile.open(fname.c_str(), std::ofstream::app);
 	// Write the first lines
-	myFile << "DDFS Log file created" << std::endl << std::endl;
+	myFile << std::endl << std::endl;
+	myFile << "******************************" << std::endl;
+	myFile << "DDFS Log file created" << std::endl;
+	myFile << "******************************" << std::endl << std::endl;
 }
 
 // Private Destructor.
