@@ -13,8 +13,7 @@
  * 4. Network congestion detection and prevention.
  *
  * TODO:
- * 1. Return type should be a of class type.
- * 2. Look into zero copy implementation.
+ * 1. Look into zero copy implementation.
  *
  * Author Harman Patial <harman.patial@gmail.com>
  */
@@ -23,9 +22,14 @@
 #define DDFS_NETWORK_H
 #include "../global/ddfs_status.h"
 
+enum DDFS_NETWORK_TYPE {
+	DDFS_NETWORK_TCP,
+	DDFS_NETWORK_UDP,
+	DDFS_NETWORK_FC,
+	DDFS_NETWORK_ISCSI,
+};
+
 class Network {
-	Network();
-	~Network();
 protected:
 	/* @sa openConnection				*/
 	/**
@@ -39,7 +43,7 @@ protected:
 	 * @return DDFS_OK	Success
 	 * @return DDFS_FAILURE	Failure
 	 */
-	virtual ddfsStatus openConnection() = 0;
+	virtual ddfsStatus openConnection(bool isClient) = 0;
 	/*	sendData			*/
 	/**
 	 * @brief   Send data across.
@@ -137,6 +141,11 @@ protected:
 	 * @return   DDFS_FAILURE		Failure
 	 */
 	virtual ddfsStatus copyData(void *des, int requestedSize, int *actualSize) = 0;
+
+	DDFS_NETWORK_TYPE network_type;
+public:
+//	Network();
+	~Network();
 };
 
 #endif /* DDFS_NETWORK_H */

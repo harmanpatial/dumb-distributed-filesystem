@@ -25,9 +25,9 @@ project_code:
 	$(MAKE) -C $(SRC_DIR1)
 	$(MAKE) -C $(SRC_DIR2)
 	$(MAKE) -C $(SRC_DIR3)
-	$(MAKE) library
+	$(MAKE) lib
 
-library : $(TARGET)
+lib : $(TARGET)
 
 $(TARGET) : 
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $(TARGET) $(OBJS)

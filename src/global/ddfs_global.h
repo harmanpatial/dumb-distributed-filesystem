@@ -32,6 +32,12 @@ public:
 	/*		initialize		*/
 	/**
 	 *
+	 * Initialize the following :
+	 *
+	 * 1. Network interface, server/client interface.
+	 * 2. Cluster Framework - Create or enter into a cluster.
+	 * 3. Initialize the database of users and files.
+	 *
 	 * @note If log_file is NULL, the default file name would be created.
 	 *
 	 * @return  DDFS_OK		Success
@@ -40,7 +46,7 @@ public:
 	static ddfsStatus initialize();
 
 private:
-	static ddfsLogger &global_logger;
+	static ddfsLogger& global_logger;
 
 	ddfsGlobal();
 	ddfsGlobal(ddfsGlobal const&);     // Don't Implement
