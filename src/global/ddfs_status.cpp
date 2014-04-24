@@ -21,7 +21,7 @@ std::string ddfsStatus::statusToString() {
 		return (std::string("Good"));
 		break;
 	case DDFS_HOST_DOWN:
-		return (std::string("Host is Down"));
+		return (std::string("Network : Host is Down"));
 		break;
 	case DDFS_NETWORK_NO_DATA:
 		return (std::string("Network : No Data"));
@@ -34,6 +34,9 @@ std::string ddfsStatus::statusToString() {
 		break;
 	case DDFS_NETWORK_OVERRUN:
 		return (std::string("Network : More data than expected"));
+		break;
+	case DDFS_GENERAL_PARAM_INVALID:
+		return (std::string("General: The paramter passed was invalid"));
 		break;
 	case DDFS_FAILURE:
 		return (std::string("Failure"));

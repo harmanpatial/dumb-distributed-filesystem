@@ -14,15 +14,20 @@ using namespace std;
 
 #include "ddfs_global.h"
 
-#include "./../network/ddfs_udpConnection.h"
-#include "./../logger/ddfs_fileLogger.h"
+#include "./../cluster/ddfs_clusterPaxos.h"
 
 ddfsLogger& ddfsGlobal::global_logger = ddfsLogger::getInstance();
 int ddfsGlobal::initialization_done = 0;
 
+
+/* Function : initialize()
+ *
+ * NOTE :
+ * After the call returns, client can issue Distributed 
+ * Filesystem operations.
+ */
 ddfsStatus ddfsGlobal::initialize() {
 	/* Open log file and write the starting message */
-	char buf[64];
 
 	if(initialization_done == 1)
 		return (ddfsStatus(DDFS_OK));
@@ -34,26 +39,33 @@ ddfsStatus ddfsGlobal::initialize() {
 				<< minor_version  << "." << patch_version
 				<< ") -- Initialization complete.\n";
 
-	/* TODO : Call the network interface to open server/client
-	 * 	  connections.
-	 *
-	 * 	  Also, call the cluster interface to initialize the cluster
-	 * 	  interface.
-	 *
-	 * 	  Before this call returns, library should be ready to perform
-	 * 	  DFS operations.
+	/* TODO :
+	 *	 
+	 * Call the cluster interface to initialize the cluster.
+	 * It is the responsiblity of the cluster interface to use the 
+	 * network interface to open server/client connections and send/recieve
+	 * network packets.
 	 */
+//	ddfsCluster cluster = new ddfsCluster();
+
+/* The below commented out code would be in the cluster module */
+
+
+/************************* 
 	UdpConnection *clientConnection = new UdpConnection();
 	UdpConnection *serverConnection = new UdpConnection();
-
 	serverConnection->openConnection(false);
 	clientConnection->openConnection(true);
 
 
+	serverConnection->closeConnection();
+	clientConnection->closeConnection();
+***************************/
+
+//	cluster.init();
 
 	/* Init done */
 	ddfsGlobal::initialization_done = 1;
-
 
 	return (ddfsStatus(DDFS_OK));
 }

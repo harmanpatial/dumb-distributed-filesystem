@@ -1,5 +1,5 @@
 /*
- * ddfs_udpConnection.cpp
+ * @file ddfs_udpConnection.cpp
  *
  * Module for managing network communication.
  *
@@ -14,7 +14,6 @@
 
 #include <iostream>
 #include <strings.h>
-#include <netinet/in.h>
 
 #include "ddfs_udpConnection.h"
 #include "../logger/ddfs_fileLogger.h"
@@ -23,8 +22,6 @@
 #define DDFS_SERVER_PORT	5000
 
 ddfsLogger &global_logger = ddfsLogger::getInstance();
-
-string const UdpConnection::client_list[1] = {"192.196.2.3"};
 
 UdpConnection::UdpConnection() {
 	network_type = DDFS_NETWORK_UDP;
@@ -40,13 +37,18 @@ UdpConnection::UdpConnection() {
  * As this is a cluster environment, need to start a server
  * port as well as a client port.
  *
+ * @param   isClient[in]	Is "true" if this is a client connection.
+ * @param   serverIp[in]	If "isClient" is true, this would be the
+ * 				server IP to connect to.
+ *
  * @return DDFS_OK	Success
  * @return DDFS_FAILURE	Failure
  */
-ddfsStatus UdpConnection::openConnection(bool isClient) {
-	struct sockaddr_in server_addr, client_addr;
-	int server_sockfd, client_sockfd;
+ddfsStatus UdpConnection::openConnection(bool isClient, string serverIp) {
+	struct sockaddr_in server_addr;
+	int server_sockfd = 0;
 
+	/* Open the server socket and wait for the client connections */
 	if(isClient == false) {
 		/* Open the server port to except incoming connections */
 		if ((server_sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
@@ -61,38 +63,29 @@ ddfsStatus UdpConnection::openConnection(bool isClient) {
 
 		/* Bind socket with the server */
 		if (bind(server_sockfd,(struct sockaddr *)&server_addr,
-		    sizeof(struct sockaddr)) == -1)
+			sizeof(server_addr)) == -1)
 		{
-			global_logger << ddfsLogger::LOG_WARNING << "Server :: Unable to bind socket. "
+			global_logger << ddfsLogger::LOG_WARNING << "UDP::Server :: Unable to bind socket. "
 								<< strerror(errno) <<"\n";
 			return (ddfsStatus(DDFS_FAILURE));
 		}
+		server_sockfd_k = server_sockfd;
 		return (ddfsStatus(DDFS_FAILURE));
 	}
 
-
-	if(isClient == true) {
-		/* Open the client port but to which server ????? */
-		if ((client_sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
-			global_logger << ddfsLogger::LOG_WARNING << "Client :: Unable to open socket.\n";
+	if(isClient == true && !serverIp.empty()) {
+		/* Start a thread that would create udp connections with other
+		 * nodes in the cluster.
+		 */
+		if(!pthread_create(&bk_thread, NULL, &UdpConnection::bk_routine, NULL)) {
+			global_logger << ddfsLogger::LOG_WARNING
+				<< "UDP ::Successfully created the background thread."
+				<< strerror(errno) <<"\n";
 			return (ddfsStatus(DDFS_FAILURE));
 		}
-
-		client_addr.sin_family = AF_INET;
-		client_addr.sin_port = htons(DDFS_SERVER_PORT);
-		client_addr.sin_addr.s_addr = INADDR_ANY;
-		bzero(&(client_addr.sin_zero),8);
-
-		/* Bind socket with the server */
-		if (bind(client_sockfd,(struct sockaddr *)&client_addr,
-		    sizeof(struct sockaddr)) == -1)
-		{
-			global_logger << ddfsLogger::LOG_WARNING << "Client :: Unable to bind socket. "
-								<< strerror(errno) <<"\n";
-			return (ddfsStatus(DDFS_FAILURE));
-		}
-		return (ddfsStatus(DDFS_FAILURE));
+		return (ddfsStatus(DDFS_OK));
 	}
+
 	return (ddfsStatus(DDFS_OK));
 	/* */
 }
@@ -175,8 +168,16 @@ ddfsStatus UdpConnection::subscribe(void (*)(int)) {
  * @return   DDFS_FAILURE	Failure
  */
 ddfsStatus UdpConnection::closeConnection() {
+
+	/* 1. Kill the background process.
+	 * 2. Disconnect from all the servers.
+	 */
+	int return_value;
+	void *value_ptr = &return_value;
+	pthread_join(bk_thread, &value_ptr);
 	return (ddfsStatus(DDFS_FAILURE));
 }
+
 /*	copyData			*/
 /**
  * @brief   Copy inbound data in the connection.
@@ -200,4 +201,73 @@ ddfsStatus UdpConnection::closeConnection() {
  */
 ddfsStatus UdpConnection::copyData(void *des, int requestedSize, int *actualSize) {
 	return (ddfsStatus(DDFS_FAILURE));
+}
+
+/*	bk_routine			*/
+/**
+ * @brief   This is background thread routine.
+ *
+ * This is the background thread routine used to handle
+ * network events including node unreachable/node temrerory unavailable.
+ *
+ * @note Background routine for processing network events.
+ *
+ * @param[in]  None.
+ *
+ * @return   None.
+ */
+void* UdpConnection::bk_routine(void *arg) {
+#if 0
+	struct sockaddr_in server_addr;
+	client_sockfd = 0;
+#endif
+	int i = 0;
+
+	global_logger << ddfsLogger::LOG_WARNING << "UDP:: Started the background thread. "
+						<< strerror(errno) <<"\n";
+
+	while(1) {
+		for(i=0; i<MAX_UDP_CONNECTIONS; i++) {
+#if 0
+			if(client_list[i].empty())
+				continue;
+
+			/* Open the client port and try to connect to other nodes
+			 * in the cluster.
+			 */
+			if ((client_sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+				global_logger << ddfsLogger::LOG_WARNING << "Client :: Unable to open socket.\n";
+				continue;
+			}
+
+			server_addr.sin_family = AF_INET;
+			server_addr.sin_port = htons(DDFS_SERVER_PORT);
+
+			inet_pton(AF_INET, client_list[i].c_str(), &server_addr.sin_addr);
+			memset(&(server_addr.sin_zero), 0, 8);
+
+			/* Periodically keep on trying to connect to the set of nodes
+			 * that has been configured.
+			 */
+			if (connect(client_sockfd,(struct sockaddr *)&server_addr,
+			    sizeof(struct sockaddr)) == -1)
+			{
+				global_logger << ddfsLogger::LOG_WARNING
+						<< "UDP::Client :: Unable to connect socket. "
+						<< strerror(errno) <<"\n";
+				continue;
+			}
+#endif
+			/* Able to make a udp connection successful.
+			 * Should wait for the remote node to do a successful login
+			 * to local node.
+			 */
+
+		} /* for loop end */
+		/* Sleep for 10 minutes */
+		sleep(10);
+	} /* while loop end */
+
+	pthread_exit(NULL);
+
 }

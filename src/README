@@ -2,8 +2,8 @@
             DUMB DFS
 ************************************************
 
-A very simple distributed filesystem.
+A very simple and extensible distributed filesystem.
 Making the basic functionality to work on a medium latency network(need to research more on this).
 
-
-
+This framework is primarily build for students who wants to on-hands knowledge of distributed systems.
+Any given module of the framework can be replaced by implementing a virtual class.

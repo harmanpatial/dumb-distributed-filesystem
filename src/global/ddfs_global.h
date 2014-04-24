@@ -33,10 +33,9 @@ public:
 	/**
 	 *
 	 * Initialize the following :
-	 *
-	 * 1. Network interface, server/client interface.
-	 * 2. Cluster Framework - Create or enter into a cluster.
-	 * 3. Initialize the database of users and files.
+	 * 
+	 * 1. Cluster Framework - Create or enter into a cluster.
+	 * 2. Initialize the database of users and files.
 	 *
 	 * @note If log_file is NULL, the default file name would be created.
 	 *

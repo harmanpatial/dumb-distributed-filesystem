@@ -5,12 +5,16 @@ LDFLAGS=
 
 SOURCES = ddfs_fileLogger.cpp
 OBJLIBS	= 
-LIBS	= -L. -lc
+LIBS	=
 
 # Objs are all the sources, with .cpp replaced by .o
-OBJS := $(SOURCES:.cpp=.o)
+OBJS := $(SOURCES:.cpp=.o) $(LIBS)
 
-all : $(OBJS)
+# To obtain object files
+%.o: %.cpp
+	$(CC) $(CFLAGS) $(LIBS) $< -o $@
 
-clean :
-	-$(RM) -f $(OBJS) $(OBJLIBS)
+all : $(ECHO) $(OBJS) $(LIBS)
+
+clean:
+	$(RM) -f $(OBJS)

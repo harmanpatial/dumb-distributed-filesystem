@@ -1,5 +1,5 @@
 /**
- * \file ddfs_network.h
+ * @file ddfs_network.h
  *
  * Module for managing network communication.
  *
@@ -22,11 +22,13 @@
 #define DDFS_NETWORK_H
 #include "../global/ddfs_status.h"
 
+using namespace std;
+
 enum DDFS_NETWORK_TYPE {
 	DDFS_NETWORK_TCP,
 	DDFS_NETWORK_UDP,
 	DDFS_NETWORK_FC,
-	DDFS_NETWORK_ISCSI,
+	DDFS_NETWORK_ISCSI
 };
 
 class Network {
@@ -43,7 +45,7 @@ protected:
 	 * @return DDFS_OK	Success
 	 * @return DDFS_FAILURE	Failure
 	 */
-	virtual ddfsStatus openConnection(bool isClient) = 0;
+	virtual ddfsStatus openConnection(bool isClient, string specificData) = 0;
 	/*	sendData			*/
 	/**
 	 * @brief   Send data across.
