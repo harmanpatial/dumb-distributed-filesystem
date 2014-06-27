@@ -46,3 +46,14 @@ std::string ddfsStatus::statusToString() {
 		break;
 	}
 }
+
+int ddfsStatus::compareStatus(ddfsStatus statusInQuestion) {
+	if(statusInQuestion.getStatus() == status)
+		return 1;
+
+	return 0;
+}
+
+DDFS_STATUS ddfsStatus::getStatus() {
+	return status;
+}

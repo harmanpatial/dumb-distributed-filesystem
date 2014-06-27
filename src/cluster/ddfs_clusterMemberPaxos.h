@@ -1,7 +1,7 @@
 /*
  * @file ddfs_clusterMemberPaxos.h 
  *
- * @breif Module containing the cluster class.
+ * @brief Module containing the cluster class.
  *
  * This is the module that contains cluster class.
  *
@@ -13,28 +13,40 @@
 
 #include <fstream>
 #include <string>
+#include <mutex>
 
 #include "ddfs_clusterMember.h"
+#include "ddfs_clusterMessagesPaxos.h"
 #include "../global/ddfs_status.h"
 
 using namespace std;
 
 enum clusterMemberState {
-	s_clusterMemberOnline	= 0,
+	s_clusterMemberOnline	= 0, /* cluster member is online. */
 	s_clusterMemberOffline,
-	s_clusterMemberDead	,
+	s_clusterMemberDead,
 	s_clusterMemberRecovering,
-	s_clusterMemberUnknown
+	s_clusterMemberUnknown,
+	/*  Member state associated with Leader Election */
+	s_clusterMemberPaxos_LE_PREPARE,
+	s_clusterMemberPaxos_LE_PROMISE = 0,
+	s_clusterMemberPaxos_LE_ACCEPT_REQUEST,
+	s_clusterMemberPaxos_LE_ACCEPTED,
+	s_clusterMemberPaxos_LE_COMPLETE,
+	s_clusterMemberPaxos_LEADER,	/* Member is the Cluster Leader */
+	s_clusterMemberPaxos_SLAVE	/* Member is slave */
 };
 
-/*
+/*
  * T_clusterMemberState = clusterMemberState
  * T_clusterID = int
  * T_memberID = int
  * T_uniqueID = int
  */
-class ddfsClusterMemberPaxos : public ddfsClusterMember<clusterMemberState, int, int, int> {
-protected:
+class ddfsClusterMemberPaxos : public ddfsClusterMember<clusterMemberState, int, ddfsClusterMessagePaxos, int, int> {
+public:
+	ddfsClusterMemberPaxos();
+	~ddfsClusterMemberPaxos();
 	ddfsStatus init();
 	ddfsStatus isOnline();
 	ddfsStatus isDead();
@@ -44,12 +56,18 @@ protected:
 	int getMemberID();
 	void setUniqueIdentification(int);
 	int getUniqueIdentification();
-public:
+	ddfsStatus sendClusterMetaData(ddfsClusterMessagePaxos *);
 private:
+	/* Identifies the cluster, of which this member is part of */
 	int clusterID;
+	/* memberID : This is unique ID of a cluster member */
 	int memberID;
+	/* Not uniqueIdentifier for using it as Number in Paxos algorithm */
 	int uniqueIdentification;
-	int currentState;
+	/* Current state of the cluster member */
+	clusterMemberState memberState;
+	/* Mutex lock for this object*/
+	std::mutex clustermemberLock;
 }; // class end
 
 #endif /* Ending DDFS_CLUSTER_MEMBER_PAXOS_H */

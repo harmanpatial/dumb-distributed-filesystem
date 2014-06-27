@@ -3,8 +3,9 @@ CC=g++
 CFLAGS= -c -Winline -Wall -Werror -pedantic-errors
 LDFLAGS=
 
-SOURCES = ddfs_clusterMemberPaxos.cpp ddfs_clusterPaxos.cpp
-INCLUDE = ddfs_cluster.h ddfs_clusterMember.h ddfs_clusterMemberPaxos.h ddfs_clusterPaxos.h \
+SOURCES = ddfs_clusterMessagesPaxos.cpp ddfs_clusterMemberPaxos.cpp ddfs_clusterPaxos.cpp
+INCLUDE = ddfs_clusterMessagesPaxos.h ddfs_cluster.h ddfs_clusterMember.h ddfs_clusterMemberPaxos.h \
+		  ddfs_clusterPaxos.h \
 		  ../logger/ddfs_logger.h ../global/ddfs_status.h
 OBJLIBS	= ../ddfs_cluster.o
 LIBS	= 

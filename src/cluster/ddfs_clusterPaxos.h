@@ -1,9 +1,10 @@
 /*
- * @file ddfs_clusterPaxos.h 
+ * @file ddfs_clusterPaxos.h
  *
- * @breif Module containing the cluster class.
+ * @brief 
  *
- * This is the module that contains cluster class.
+ * This is the module that contains cluster class implementing Paxos consensus algorithm.
+ * Paxos.
  *
  * @author Harman Patial <harman.patial@gmail.com>
  *
@@ -30,25 +31,34 @@ using namespace std;
  * @note This would implement all the cluster related functions.
  * 	 A singleton class.
  *
- * @note 
- *	 
+ * @note This is primarily exposed to Administrator.
+ * addMember*, deleteMember* interface is exposed to the Admin can add or delete members for the cluster.
+ *
  */
  
 class ddfsClusterPaxos:protected ddfsCluster<ddfsClusterMemberPaxos> {
 private:
 	int clusterID;
 	static const int s_maxClusterMembers = 4;
+	ddfsClusterMemberPaxos* localClusterMember;
+	int clusterMemberCount;
 protected:
 	ddfsStatus init();
+	/*
+	 * Function that would contain the logic to perform leader election.
+	 */
 	ddfsStatus leaderElection();
 	void asyncEventHandling();
-	ddfsClusterMemberPaxos clusterMembers[s_maxClusterMembers];
 	ddfsStatus addMember(ddfsClusterMemberPaxos);
 	ddfsStatus addMembers();
 	ddfsStatus deleteMember();
 	ddfsStatus deleteMembers();
+	
+	/* Methods specific to Paxos algorithm */
+	ddfsClusterMemberPaxos* getLocalNode();
 public:
 	ddfsClusterPaxos();
+	~ddfsClusterPaxos();
 	static const int s_clusterIDInvalid = -1;
 }; // class end
 

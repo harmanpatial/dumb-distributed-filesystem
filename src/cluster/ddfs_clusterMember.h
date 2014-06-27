@@ -32,10 +32,9 @@ using namespace std;
  *	 
  */
 
-template <typename T_clusterMemberState, typename T_clusterID, typename T_memberID, typename T_uniqueID>
+template <typename T_clusterMemberState, typename T_clusterID, typename T_ClusterMessage, typename T_memberID, typename T_uniqueID>
 class ddfsClusterMember {
-protected:
-	virtual ddfsStatus init();
+public:
 	virtual ddfsStatus isOnline();
 	virtual ddfsStatus isDead();
 	
@@ -50,10 +49,11 @@ protected:
 	
 	virtual void setUniqueIdentification(T_uniqueID);
 	virtual int getUniqueIdentification();
+	virtual ddfsStatus sendClusterMetaData(T_ClusterMessage *);
 public:
 	static const int s_clusterMemberIdInvalid = -1;
-private:
 	ddfsClusterMember();
+private:
 	T_clusterID clusterID;
 	T_memberID memberID;
 	int uniqueIdentification;

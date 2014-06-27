@@ -1,9 +1,9 @@
 /*
  * @file ddfs_clusterMemberPaxos.cpp
  *
- * @breif Module containing the cluster class.
+ * @brief Module containing the cluster member class.
  *
- * This is the module that contains cluster class.
+ * This is the module that contains cluster member class.
  *
  * @author Harman Patial <harman.patial@gmail.com>
  *
@@ -17,17 +17,64 @@
 
 using namespace std;
 
-ddfsStatus ddfsClusterMemberPaxos::init() {
-
-	return (ddfsStatus(DDFS_FAILURE));
+ddfsClusterMemberPaxos::ddfsClusterMemberPaxos() {
+	clusterID = -1;
+	memberID = -1;
+	uniqueIdentification = -1;
+	memberState = s_clusterMemberUnknown;
+	return;
 }
-#if 0
-	ddfsStatus isOnline();
-	ddfsStatus isDead();
-	ddfsStatus getCurrentState();
-	ddfsStatus setCurrentState(ddfsStatus);
-	void setMemberID(Integer);
-	int getMemberID();
-	void setUniqueIdentification(tempate <>);
-	int getUniqueIdentification();
-#endif
+
+ddfsStatus ddfsClusterMemberPaxos::isOnline() {
+	clustermemberLock.lock();
+	return (ddfsStatus(DDFS_FAILURE));
+	clustermemberLock.unlock();
+}
+
+ddfsStatus ddfsClusterMemberPaxos::isDead() {
+	clustermemberLock.lock();
+	return (ddfsStatus(DDFS_FAILURE));
+	clustermemberLock.unlock();
+}
+
+clusterMemberState ddfsClusterMemberPaxos::getCurrentState() {
+	clustermemberLock.lock();
+	return memberState;	
+	clustermemberLock.unlock();
+}
+
+ddfsStatus ddfsClusterMemberPaxos::setCurrentState(clusterMemberState newState) {
+	clustermemberLock.lock();
+	memberState = newState;
+	clustermemberLock.unlock();
+	return (ddfsStatus(DDFS_OK));
+}
+
+void ddfsClusterMemberPaxos::setMemberID(int newMemberID) {
+	clustermemberLock.lock();
+	memberID = newMemberID;
+	clustermemberLock.unlock();
+}
+
+int ddfsClusterMemberPaxos::getMemberID() {
+	clustermemberLock.lock();
+	return memberID;
+	clustermemberLock.unlock();
+}
+
+void ddfsClusterMemberPaxos::setUniqueIdentification(int newIdentifier) {
+	clustermemberLock.lock();
+	uniqueIdentification =  newIdentifier;
+	clustermemberLock.unlock();
+}
+int ddfsClusterMemberPaxos::getUniqueIdentification() {
+	return uniqueIdentification;
+}
+
+ddfsStatus ddfsClusterMemberPaxos::sendClusterMetaData(ddfsClusterMessagePaxos *message) {
+
+
+	return (ddfsStatus(DDFS_OK));
+}
+
+

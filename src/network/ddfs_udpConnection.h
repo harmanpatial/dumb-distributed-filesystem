@@ -34,8 +34,10 @@ public:
 	UdpConnection();
 	~UdpConnection();
 
+#if 0
 	/* TODO : Why do we need this ?? */
 	static const string client_list[MAX_CLUSTER_NODES];
+#endif	
 	ddfsStatus openConnection(bool, string specific_data);
 	ddfsStatus sendData(void *data, int size, void (*fn)(int));
 	ddfsStatus receiveData(void *des, int requestedSize,

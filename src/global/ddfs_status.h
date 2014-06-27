@@ -16,6 +16,7 @@ enum DDFS_STATUS {
 	DDFS_NETWORK_UNDERRUN,
 	DDFS_NETWORK_OVERRUN,
 	DDFS_GENERAL_PARAM_INVALID,
+	DDFS_CLUSTER_INSUFFICIENT_NODES,
 	DDFS_FAILURE
 };
 
@@ -23,7 +24,6 @@ class ddfsStatus {
 
 private:
 	DDFS_STATUS status;
-
 public:
 	explicit ddfsStatus(DDFS_STATUS local_status);
 	/**
@@ -33,6 +33,9 @@ public:
  	 *
  	 */
 	std::string statusToString();
+	/* Do not use this outside this class member function */
+	DDFS_STATUS getStatus();
+	int compareStatus(ddfsStatus);
 }; // class end
 
 #endif /* Ending DDFS_STATUS_H */
