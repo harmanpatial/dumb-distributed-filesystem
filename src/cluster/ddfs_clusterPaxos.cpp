@@ -14,11 +14,13 @@
 
 #include "ddfs_clusterPaxos.h"
 #include "ddfs_clusterMessagesPaxos.h"
+#include "ddfs_clusterPaxosInstance.h"
 #include "../logger/ddfs_fileLogger.h"
 #include "../global/ddfs_status.h"
 
 #include <sys/types.h>
 #include <ifaddrs.h>
+#include <unistd.h>
 
 using namespace std;
 
@@ -28,49 +30,55 @@ ddfsClusterPaxos::ddfsClusterPaxos() {
 	clusterID = s_clusterIDInvalid;
 	localClusterMember = new ddfsClusterMemberPaxos;
 	clusterMemberCount = 1; /* 1 for the local Node */
+	paxosProposalNumber = 
+		getLocalNode()->getUniqueIdentification();
 
 	return;
 }
 
+uint64_t ddfsClusterPaxos::getProposalNumber() {
+	return paxosProposalNumber++;
+}
+
 ddfsStatus ddfsClusterPaxos::leaderElection() {
-	int localuniqueID;
-	list<ddfsClusterMemberPaxos>::iterator clusterMemberIter;
-	ddfsClusterMessagePaxos message = ddfsClusterMessagePaxos();
+	list<ddfsClusterMemberPaxos *>::iterator clusterMemberIter;
+	list<ddfsClusterMemberPaxos *> members;
+	ddfsStatus status(DDFS_FAILURE);
 	
+	/*  If there is no other node in the cluster, no need to start leader
+	 *  election.
+	 */
 	if(clusterMemberCount <= 1) {
 		global_logger << ddfsLogger::LOG_INFO
-			<< "Number of members in the cluster : "<< clusterMemberCount;
+			<< "Cannot perform leader election. Add more nodes in the cluster";
 		global_logger << ddfsLogger::LOG_INFO
-			<< "Cannot perform leader election, Add more nodes in the cluster";
+			<< "Number of members in the cluster : "<< clusterMemberCount;
 		return (ddfsStatus(DDFS_CLUSTER_INSUFFICIENT_NODES));
 	}
-	
-	/* Start the leader Election */
-	/* Alogirithm is straight formward.
-	 * 
-	 * Phase 1a: Prepare
-	 * Phase 1b: Promise
-	 * Phase 2a: Accept Request
-	 * Phase 2b: Accepted
-	 */
-	/* Getting unique identifier to be used leader election */
-	localuniqueID = getLocalNode()->getUniqueIdentification();
-	
-	/*  Send Prepare cluster message to all the nodes in the cluster. Promise cluster message should arrive */
+
+	/* Push all the online members of the cluster to a local list */
 	for(clusterMemberIter = clusterMembers.begin(); clusterMemberIter != clusterMembers.end(); clusterMemberIter++) {
-		if( clusterMemberIter->isOnline().compareStatus(ddfsStatus(DDFS_OK)) == 0) {
-			global_logger << ddfsLogger::LOG_WARNING << "Node " << clusterMemberIter->getUniqueIdentification() << " is offline";
+		if((*clusterMemberIter)->isOnline().compareStatus(ddfsStatus(DDFS_OK)) == false) {
+			global_logger << ddfsLogger::LOG_WARNING << "Node " << (*clusterMemberIter)->getUniqueIdentification() << " is offline";
 		}
-		/* Create packet for the Prepare request and send it to the choosen node */
-		message.addMessage(CLUSTER_MESSAGE_TYPE_PREPARE, localuniqueID);
-		clusterMemberIter->sendClusterMetaData(&message);
-		clusterMemberIter->setCurrentState(s_clusterMemberPaxos_LE_PREPARE);
+		/* Push this member to the local members list. */
+		members.push_back(*clusterMemberIter);
 	}
 
-	/*  Wait for 10 seconds for the Promise response from Quorum */
-	
+	/*  Create a ddfsClusterPaxosInstance instance and let it rip
+	 *  
+	 *  NOTE : As this is leader election paxos instance, there is no need
+	 *  	   for async completion of the paxos instance.
+	 */
+	ddfsClusterPaxosInstance paxosInstance; 
 
-	return (ddfsStatus(DDFS_FAILURE)); 
+	status = paxosInstance.start(getProposalNumber(), members);
+	if(status.compareStatus(ddfsStatus(DDFS_OK)) == false) {
+		global_logger << ddfsLogger::LOG_WARNING << "********* LEADER ELECTION FAILED *********";
+	}
+
+	global_logger << ddfsLogger::LOG_WARNING << "LEADER ELECTION SUCCESSFULL.";
+	return status; 
 }
 
 void ddfsClusterPaxos::asyncEventHandling() {

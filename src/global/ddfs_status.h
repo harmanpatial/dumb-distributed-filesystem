@@ -35,7 +35,7 @@ public:
 	std::string statusToString();
 	/* Do not use this outside this class member function */
 	DDFS_STATUS getStatus();
-	int compareStatus(ddfsStatus);
+	bool compareStatus(ddfsStatus);
 }; // class end
 
 #endif /* Ending DDFS_STATUS_H */

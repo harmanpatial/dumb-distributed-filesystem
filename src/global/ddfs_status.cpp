@@ -47,11 +47,11 @@ std::string ddfsStatus::statusToString() {
 	}
 }
 
-int ddfsStatus::compareStatus(ddfsStatus statusInQuestion) {
+bool ddfsStatus::compareStatus(ddfsStatus statusInQuestion) {
 	if(statusInQuestion.getStatus() == status)
-		return 1;
+		return true;
 
-	return 0;
+	return false;
 }
 
 DDFS_STATUS ddfsStatus::getStatus() {

@@ -29,7 +29,7 @@ enum clusterMemberState {
 	s_clusterMemberUnknown,
 	/*  Member state associated with Leader Election */
 	s_clusterMemberPaxos_LE_PREPARE,
-	s_clusterMemberPaxos_LE_PROMISE = 0,
+	s_clusterMemberPaxos_LE_PROMISE,
 	s_clusterMemberPaxos_LE_ACCEPT_REQUEST,
 	s_clusterMemberPaxos_LE_ACCEPTED,
 	s_clusterMemberPaxos_LE_COMPLETE,
@@ -62,12 +62,15 @@ private:
 	int clusterID;
 	/* memberID : This is unique ID of a cluster member */
 	int memberID;
-	/* Not uniqueIdentifier for using it as Number in Paxos algorithm */
+	/* uniqueIdentifier for using it as Number in Paxos algorithm */
+	/* This is mac address shifted left by 12 bits */
 	int uniqueIdentification;
 	/* Current state of the cluster member */
 	clusterMemberState memberState;
 	/* Mutex lock for this object*/
 	std::mutex clustermemberLock;
+
+	ddfsClusterMemberPaxos(const ddfsClusterMemberPaxos &other);  /* copy constructor */
 }; // class end
 
 #endif /* Ending DDFS_CLUSTER_MEMBER_PAXOS_H */

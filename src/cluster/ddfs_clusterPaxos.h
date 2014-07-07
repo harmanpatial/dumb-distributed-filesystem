@@ -38,16 +38,17 @@ using namespace std;
  
 class ddfsClusterPaxos:protected ddfsCluster<ddfsClusterMemberPaxos> {
 private:
-	int clusterID;
 	static const int s_maxClusterMembers = 4;
 	ddfsClusterMemberPaxos* localClusterMember;
 	int clusterMemberCount;
 protected:
 	ddfsStatus init();
+	list<ddfsClusterMemberPaxos *> clusterMembers;
 	/*
 	 * Function that would contain the logic to perform leader election.
 	 */
 	ddfsStatus leaderElection();
+	uint64_t getProposalNumber();
 	void asyncEventHandling();
 	ddfsStatus addMember(ddfsClusterMemberPaxos);
 	ddfsStatus addMembers();

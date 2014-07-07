@@ -36,8 +36,10 @@ using namespace std;
 template <typename T_ddfsClusterMember>
 class ddfsCluster {
 protected:
-	~ddfsCluster();
+	int clusterID;
 	list<T_ddfsClusterMember> clusterMembers;
+	uint64_t paxosProposalNumber;
+	~ddfsCluster();
 	virtual ddfsStatus leaderElection();
 	virtual void asyncEventHandling();
 	virtual ddfsStatus addMember(T_ddfsClusterMember);
@@ -48,7 +50,6 @@ public:
 	static const int s_clusterIDInvalid = -1;
 	ddfsCluster();
 private:
-	int clusterID;
 	ddfsCluster(ddfsCluster const&);     // Don't Implement
 	void operator=(ddfsCluster const&); // Don't implement
 }; // class end
