@@ -1,0 +1,15 @@
+                        DDFS - Dumb Distributed FileSystem
+
+DDFS is designed with extendibility in mind.
+
+People who are learning about Distributed Filesystem would find this filesystem
+very helpful.
+
+It seems like a daunting job to design and implement a DFS.
+But what if you could implement only one part of it.
+DDFS is designed as set of template files for each major part of Distributed FileSystem
+eg. network, cluster algorithm, file metadata management.
+
+By only implementing the template class for a specific module, anybody can get there hands
+dirty.
+
