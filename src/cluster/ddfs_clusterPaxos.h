@@ -36,9 +36,10 @@ using namespace std;
  *
  */
  
-class ddfsClusterPaxos:protected ddfsCluster<ddfsClusterMemberPaxos> {
+class ddfsClusterPaxos:protected ddfsCluster<ddfsClusterMemberPaxos *> {
 private:
-	static const int s_maxClusterMembers = 4;
+	static const uint8_t s_maxClusterMembers = 4;
+    static const uint8_t  s_retryCountLE = 5;
 	ddfsClusterMemberPaxos* localClusterMember;
 	int clusterMemberCount;
 protected:
@@ -46,14 +47,19 @@ protected:
 	list<ddfsClusterMemberPaxos *> clusterMembers;
 	/*
 	 * Function that would contain the logic to perform leader election.
+	 *
+	 * TODO : If this function fails, a seperate thread should be created
+	 *        that would keep on trying this leader election algorithm.
+	 *        That thread would only stop when local node becomes part of
+	 *        a cluster(either member or a master node).
 	 */
 	ddfsStatus leaderElection();
 	uint64_t getProposalNumber();
-	void asyncEventHandling();
-	ddfsStatus addMember(ddfsClusterMemberPaxos);
-	ddfsStatus addMembers();
-	ddfsStatus deleteMember();
-	ddfsStatus deleteMembers();
+	void asyncEventHandling(void *buffer, int bufferCount);
+	ddfsStatus addMember(ddfsClusterMemberPaxos *);
+	ddfsStatus addMembers();    /* Does nothing at this point */
+	ddfsStatus deleteMember(ddfsClusterMemberPaxos *);
+	ddfsStatus deleteMembers(); /* Does nothing at this point */
 	
 	/* Methods specific to Paxos algorithm */
 	ddfsClusterMemberPaxos* getLocalNode();

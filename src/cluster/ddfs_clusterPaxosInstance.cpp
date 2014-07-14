@@ -46,7 +46,7 @@ ddfsStatus ddfsClusterPaxosInstance::start (uint64_t uniqueID, list <ddfsCluster
 				global_logger << ddfsLogger::LOG_WARNING << "Node " << (*clusterMemberIter)->getUniqueIdentification() << " is offline";
 			}
 			/* Create packet for the Prepare request and send it to the choosen node */
-			message.addMessage(CLUSTER_MESSAGE_TYPE_PREPARE, uniqueID);
+			message.addMessage(CLUSTER_MESSAGE_LE_TYPE_PREPARE, uniqueID);
 			(*clusterMemberIter)->sendClusterMetaData(&message);
 			(*clusterMemberIter)->setCurrentState(s_clusterMemberPaxos_LE_PREPARE);
 		}
@@ -67,7 +67,7 @@ ddfsStatus ddfsClusterPaxosInstance::start (uint64_t uniqueID, list <ddfsCluster
 		for(clusterMemberIter = participatingMembers.begin(); clusterMemberIter != participatingMembers.end(); clusterMemberIter++) {
 			if((*clusterMemberIter)->getCurrentState() == s_clusterMemberPaxos_LE_PROMISE) {
 				/* Create packet for the "Accept Request" request and send it to the choosen node */
-				message.addMessage(CLUSTER_MESSAGE_ACCEPT_REQUESTED, uniqueID);
+				message.addMessage(CLUSTER_MESSAGE_LE_ACCEPT_REQUESTED, uniqueID);
 				(*clusterMemberIter)->sendClusterMetaData(&message);
 				(*clusterMemberIter)->setCurrentState(s_clusterMemberPaxos_LE_ACCEPT_REQUEST);
 			}

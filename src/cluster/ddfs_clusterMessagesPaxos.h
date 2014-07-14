@@ -37,10 +37,10 @@ enum clusterMessageTypeOfService {
 };
 
 enum clusterMessageType {
-	CLUSTER_MESSAGE_TYPE_PREPARE = 0,
-	CLUSTER_MESSAGE_TYPE_PROMISE,
-	CLUSTER_MESSAGE_ACCEPT_REQUESTED,
-	CLUSTER_MESSAGE_ACCEPTED
+	CLUSTER_MESSAGE_LE_TYPE_PREPARE = 0,
+	CLUSTER_MESSAGE_LE_TYPE_PROMISE,
+	CLUSTER_MESSAGE_LE_ACCEPT_REQUESTED,
+	CLUSTER_MESSAGE_LE_ACCEPTED
 };
 
 /******************************************************************
@@ -52,22 +52,11 @@ enum clusterMessageType {
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |    Version	|Type of Service|  	Total Length  	        |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|			Reserved1				|
+|			Reserved1				
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|			Reserved2				|
+|			Reserved2				
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-
-If type of service is "Cluster Management", bunch of messages can
-be attached in this packet. "Total Length".
-
-0                   1                   2                   3
-0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|  			    Type				|
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|  			    Unique ID				|
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 If type of service is "Cluster Management", bunch of messages can
 be attached in this packet. "Total Length".
@@ -75,19 +64,58 @@ be attached in this packet. "Total Length".
 0                   1                   2                   3
 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|  				Data         			|
+|  		Message Type			|         Reserved1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|  			    Unique ID
+|
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+If type of service is "Cluster Management", bunch of messages can
+be attached in this packet. "Total Length".
+
+0                   1                   2                   3
+0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|  			 Data Offset	    |       Reserved1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|  			        Unique ID				
+|
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|  				            DATA
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 
 ******************************************************************/
 
-class ddfsClusterMessagePaxos {
-private:
-	/*  Packet Header */
+/*  Packet Header */
+typedef struct {
 	uint8_t version;
 	uint8_t typeOfService;
 	uint16_t totalLength;
-	char* message;
+    uint32_t Reserved1;
+    uint32_t Reserved2;
+} ddfsClusterHeader;
+
+/*  Packet cluster message */
+typedef struct {
+    uint16_t messageType;
+    uint16_t Reserved1;
+    uint64_t uniqueID;
+} ddfsClusterMessage;
+
+/*  Packet cluster message */
+typedef struct {
+    uint16_t dataOffset;
+    uint16_t Reserved1;
+    uint64_t uniqueID;
+} ddfsClusterData;
+
+class ddfsClusterMessagePaxos {
+private:
+    ddfsClusterHeader header;
+    ddfsClusterMessage clusterMessage;
+    ddfsClusterData data;
+	void* message;
 public:
 	ddfsClusterMessagePaxos();
 	~ddfsClusterMessagePaxos();

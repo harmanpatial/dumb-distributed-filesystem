@@ -41,10 +41,21 @@ protected:
 	uint64_t paxosProposalNumber;
 	~ddfsCluster();
 	virtual ddfsStatus leaderElection();
-	virtual void asyncEventHandling();
+    /* !
+    *  \brief  asyncEventHandling
+    *
+    *  \param[in]   buffer      The pointer to the buffer received.
+    *  \param[in]   bufferCount The count of the buffer.
+    *
+    *  \return      void
+    *
+    *  \note        This is what would handle to cluster data.
+    *               All the data is of a specific format.
+    */
+    virtual void asyncEventHandling(void *buffer, int bufferCount);
 	virtual ddfsStatus addMember(T_ddfsClusterMember);
 	virtual ddfsStatus addMembers();
-	virtual ddfsStatus deleteMember();
+	virtual ddfsStatus deleteMember(T_ddfsClusterMember);
 	virtual ddfsStatus deleteMembers();
 public:
 	static const int s_clusterIDInvalid = -1;

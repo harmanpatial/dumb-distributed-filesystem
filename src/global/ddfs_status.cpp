@@ -38,6 +38,12 @@ std::string ddfsStatus::statusToString() {
 	case DDFS_GENERAL_PARAM_INVALID:
 		return (std::string("General: The paramter passed was invalid"));
 		break;
+	case DDFS_CLUSTER_INSUFFICIENT_NODES:
+		return (std::string("Cluster: Insufficient nodes"));
+		break;
+    case DDFS_CLUSTER_ALREADY_MEMBER:
+		return (std::string("General: This member is already part of the cluster"));
+		break;
 	case DDFS_FAILURE:
 		return (std::string("Failure"));
 		break;

@@ -34,9 +34,9 @@ using namespace std;
 #define MAX_SIZE_OF_MESSAGES	(SIZE_OF_MESSAGE * MAX_NUM_OF_MESSAGES) 
 
 ddfsClusterMessagePaxos::ddfsClusterMessagePaxos() {
-	version = 0;
-	typeOfService = CLUSTER_MESSAGE_TOF_CLUSTER_UNKNOWN;
-	totalLength = 0;
+	header.version = 0;
+	header.typeOfService = CLUSTER_MESSAGE_TOF_CLUSTER_UNKNOWN;
+	header.totalLength = 0;
 	message = (char *)malloc(SIZE_OF_HEADER + MAX_SIZE_OF_MESSAGES);
 }
 
@@ -44,32 +44,31 @@ ddfsStatus ddfsClusterMessagePaxos::addMessage(uint32_t type, uint32_t uuid) {
 	uint32_t wtype = htonl(type);
 	uint64_t wuuid = htonl(uuid);
 
-	if(typeOfService == CLUSTER_MESSAGE_TOF_CLUSTER_UNKNOWN)
+	if(header.typeOfService == CLUSTER_MESSAGE_TOF_CLUSTER_UNKNOWN)
 		return (ddfsStatus(DDFS_FAILURE));
 
-	typeOfService = CLUSTER_MESSAGE_TOF_CLUSTER_MGMT;
+	header.typeOfService = CLUSTER_MESSAGE_TOF_CLUSTER_MGMT;
 
 	/* Maximum four messages at a time are supported */
-	if(totalLength == MAX_SIZE_OF_MESSAGES)
+	if(header.totalLength == MAX_SIZE_OF_MESSAGES)
 		return (ddfsStatus(DDFS_FAILURE));
 
 
-	memcpy(message + SIZE_OF_HEADER + totalLength, &wtype, sizeof(wtype));
-	memcpy(message + SIZE_OF_HEADER + totalLength + sizeof(wtype), &wuuid, sizeof(wuuid));
+	memcpy((uint8_t *)message + SIZE_OF_HEADER + header.totalLength, &wtype, sizeof(wtype));
+	memcpy((uint8_t *)message + SIZE_OF_HEADER + header.totalLength + sizeof(wtype), &wuuid, sizeof(wuuid));
 
-	totalLength += SIZE_OF_MESSAGE;
+	header.totalLength += SIZE_OF_MESSAGE;
 
 	return (ddfsStatus(DDFS_OK));
 }
 
-
 void * ddfsClusterMessagePaxos::returnBuffer() {
-	memcpy(message, &version, sizeof(version));
-	memcpy(message + sizeof(version),
-		&typeOfService, sizeof(typeOfService));
+	memcpy(message, &header.version, sizeof(header.version));
+	memcpy((uint8_t *)message + sizeof(header.version),
+		&header.typeOfService, sizeof(header.typeOfService));
 	
-	memcpy(message + sizeof(version) + sizeof(typeOfService),
-		&totalLength, sizeof(totalLength));
+	memcpy((uint8_t *)message + sizeof(header.version) + sizeof(header.typeOfService),
+		&header.totalLength, sizeof(header.totalLength));
 
 	return (void *)message;
 }
