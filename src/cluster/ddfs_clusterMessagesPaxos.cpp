@@ -34,41 +34,46 @@ using namespace std;
 #define MAX_SIZE_OF_MESSAGES	(SIZE_OF_MESSAGE * MAX_NUM_OF_MESSAGES) 
 
 ddfsClusterMessagePaxos::ddfsClusterMessagePaxos() {
-	header.version = 0;
-	header.typeOfService = CLUSTER_MESSAGE_TOF_CLUSTER_UNKNOWN;
-	header.totalLength = 0;
+	ddfsHeader.version = 0;
+	ddfsHeader.typeOfService = CLUSTER_MESSAGE_TOF_CLUSTER_UNKNOWN;
+	ddfsHeader.totalLength = 0;
 	message = (char *)malloc(SIZE_OF_HEADER + MAX_SIZE_OF_MESSAGES);
 }
 
-ddfsStatus ddfsClusterMessagePaxos::addMessage(uint32_t type, uint32_t uuid) {
-	uint32_t wtype = htonl(type);
-	uint64_t wuuid = htonl(uuid);
+ddfsStatus ddfsClusterMessagePaxos::addMessage(uint16_t type, uint64_t uuid) {
+	ddfsMessage.messageType = htonl(type);
+    ddfsMessage.Reserved1 = htonl(0);
+	ddfsMessage.uniqueID = htonl(uuid);
 
-	if(header.typeOfService == CLUSTER_MESSAGE_TOF_CLUSTER_UNKNOWN)
+	if(ddfsHeader.typeOfService == CLUSTER_MESSAGE_TOF_CLUSTER_UNKNOWN)
 		return (ddfsStatus(DDFS_FAILURE));
 
-	header.typeOfService = CLUSTER_MESSAGE_TOF_CLUSTER_MGMT;
+	ddfsHeader.typeOfService = CLUSTER_MESSAGE_TOF_CLUSTER_MGMT;
 
 	/* Maximum four messages at a time are supported */
-	if(header.totalLength == MAX_SIZE_OF_MESSAGES)
+	if(ddfsHeader.totalLength == MAX_SIZE_OF_MESSAGES)
 		return (ddfsStatus(DDFS_FAILURE));
 
 
-	memcpy((uint8_t *)message + SIZE_OF_HEADER + header.totalLength, &wtype, sizeof(wtype));
-	memcpy((uint8_t *)message + SIZE_OF_HEADER + header.totalLength + sizeof(wtype), &wuuid, sizeof(wuuid));
+	memcpy((uint8_t *)message + SIZE_OF_HEADER + ddfsHeader.totalLength, &ddfsMessage, sizeof(ddfsMessage));
 
-	header.totalLength += SIZE_OF_MESSAGE;
+	ddfsHeader.totalLength += SIZE_OF_MESSAGE;
 
 	return (ddfsStatus(DDFS_OK));
 }
 
 void * ddfsClusterMessagePaxos::returnBuffer() {
-	memcpy(message, &header.version, sizeof(header.version));
-	memcpy((uint8_t *)message + sizeof(header.version),
-		&header.typeOfService, sizeof(header.typeOfService));
+	memcpy(message, &ddfsHeader.version, sizeof(ddfsHeader.version));
+	memcpy((uint8_t *)message + sizeof(ddfsHeader.version),
+		&ddfsHeader.typeOfService, sizeof(ddfsHeader.typeOfService));
 	
-	memcpy((uint8_t *)message + sizeof(header.version) + sizeof(header.typeOfService),
-		&header.totalLength, sizeof(header.totalLength));
+	memcpy((uint8_t *)message + sizeof(ddfsHeader.version) + sizeof(ddfsHeader.typeOfService),
+		&ddfsHeader.totalLength, sizeof(ddfsHeader.totalLength));
 
 	return (void *)message;
 }
+
+uint64_t ddfsClusterMessagePaxos::returnBufferSize() {
+    return ddfsHeader.totalLength;
+}
+

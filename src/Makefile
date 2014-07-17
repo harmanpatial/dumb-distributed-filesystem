@@ -24,18 +24,21 @@ LIBS		= -L.
 .PHONY: project_code
 
 project_code:
+	@echo "*** DDFS Compiling targets *****"
 	$(MAKE) -C $(SRC_DIR1)
 	$(MAKE) -C $(SRC_DIR2)
 	$(MAKE) -C $(SRC_DIR3)
 	$(MAKE) -C $(SRC_DIR4)
+	@echo "*** DDFS Compilation Completed *****"
 	$(MAKE) lib
 
 lib : $(TARGET)
 
 $(TARGET) :
-	@echo "*** DDFS building targets *****"
+	@echo "*** DDFS Building Dynamic Library *****"
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $(TARGET) $(OBJS)
 	$(CP) $(TARGET) ../
+	@echo "*** DDFS Build Process Complete *****"
 
 clean :
 	$(ECHO) 

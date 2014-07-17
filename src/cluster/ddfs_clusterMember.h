@@ -32,7 +32,7 @@ using namespace std;
  *	 
  */
 
-template <typename T_clusterMemberState, typename T_clusterID, typename T_ClusterMessage, typename T_memberID, typename T_uniqueID>
+template <typename T_clusterMemberState, typename T_clusterID, typename T_ClusterMessage, typename T_memberID, typename T_uniqueID, typename T_network>
 class ddfsClusterMember {
 public:
 	virtual ddfsStatus isOnline();
@@ -58,6 +58,7 @@ private:
 	T_memberID memberID;
 	int uniqueIdentification;
 	T_clusterMemberState currentState;
+    T_network ddfsNetwork;
 }; // class end
 
 #endif /* Ending DDFS_CLUSTER_MEMBER_H */

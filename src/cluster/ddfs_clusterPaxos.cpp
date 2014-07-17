@@ -28,11 +28,13 @@ ddfsLogger &global_logger = ddfsLogger::getInstance();
  
 ddfsClusterPaxos::ddfsClusterPaxos() {
 	clusterID = s_clusterIDInvalid;
-	localClusterMember = new ddfsClusterMemberPaxos;
 	clusterMemberCount = 1; /* 1 for the local Node */
 	paxosProposalNumber = 
 		getLocalNode()->getUniqueIdentification();
 
+	localClusterMember = new ddfsClusterMemberPaxos;
+    /* Initialize the local node */
+    localClusterMember->init(true);
 	return;
 }
 

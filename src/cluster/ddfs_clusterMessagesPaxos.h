@@ -94,33 +94,45 @@ typedef struct {
 	uint16_t totalLength;
     uint32_t Reserved1;
     uint32_t Reserved2;
-} ddfsClusterHeader;
+} __attribute__((packed)) ddfsClusterHeader;
 
 /*  Packet cluster message */
 typedef struct {
     uint16_t messageType;
     uint16_t Reserved1;
     uint64_t uniqueID;
-} ddfsClusterMessage;
+} __attribute__((packed)) ddfsClusterMessage;
 
-/*  Packet cluster message */
+/*  Packet data message */
+/*  \note This should only be used by DDFS clients.
+ *        Data is send directly from the DDFS client
+ *        to individual nodes of the cluster.
+ */
 typedef struct {
     uint16_t dataOffset;
     uint16_t Reserved1;
     uint64_t uniqueID;
-} ddfsClusterData;
+} __attribute__((packed)) ddfsClusterData;
 
+/*!
+ *  \class  ddfsClusterMessagePaxos
+ *  \brief  This is the class for forming the cluster message.
+ *  
+ *   These messages are essential for correct working of
+ *   the cluster.
+ */
 class ddfsClusterMessagePaxos {
 private:
-    ddfsClusterHeader header;
-    ddfsClusterMessage clusterMessage;
-    ddfsClusterData data;
+    ddfsClusterHeader ddfsHeader;
+    ddfsClusterMessage ddfsMessage;
+    ddfsClusterData ddfsData;
 	void* message;
 public:
 	ddfsClusterMessagePaxos();
 	~ddfsClusterMessagePaxos();
-	virtual ddfsStatus addMessage(uint32_t type, uint32_t uuid);
+	virtual ddfsStatus addMessage(uint16_t type, uint64_t uuid);
 	virtual void * returnBuffer();
+	uint64_t returnBufferSize();
 };
 
 #endif	/* Ending DDFS_CLUSTER_MESSAGES_PAXOS_H */

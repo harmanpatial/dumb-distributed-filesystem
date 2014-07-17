@@ -17,6 +17,7 @@
 
 #include "ddfs_clusterMember.h"
 #include "ddfs_clusterMessagesPaxos.h"
+#include "../network/ddfs_udpConnection.h"
 #include "../global/ddfs_status.h"
 
 using namespace std;
@@ -43,11 +44,11 @@ enum clusterMemberState {
  * T_memberID = int
  * T_uniqueID = int
  */
-class ddfsClusterMemberPaxos : public ddfsClusterMember<clusterMemberState, int, ddfsClusterMessagePaxos, int, int> {
+class ddfsClusterMemberPaxos : public ddfsClusterMember<clusterMemberState, int, ddfsClusterMessagePaxos, int, int, ddfsUdpConnection> {
 public:
 	ddfsClusterMemberPaxos();
 	~ddfsClusterMemberPaxos();
-	ddfsStatus init();
+	ddfsStatus init(bool isLocalNode);
 	ddfsStatus isOnline();
 	ddfsStatus isDead();
 	clusterMemberState getCurrentState();
@@ -67,6 +68,8 @@ private:
 	int uniqueIdentification;
 	/* Current state of the cluster member */
 	clusterMemberState memberState;
+	/* Current state of the cluster member */
+	ddfsUdpConnection network;
 	/* Mutex lock for this object*/
 	std::mutex clustermemberLock;
 

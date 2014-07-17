@@ -25,22 +25,31 @@ ddfsClusterMemberPaxos::ddfsClusterMemberPaxos() {
 	return;
 }
 
+ddfsStatus ddfsClusterMemberPaxos::init(bool isLocalNode) {
+    if (isLocalNode == false)
+	    return (ddfsStatus(DDFS_FAILURE));
+
+    /* For local node, need to initialize the underline network class */
+    
+    return (ddfsStatus(DDFS_OK));
+}
+
 ddfsStatus ddfsClusterMemberPaxos::isOnline() {
 	clustermemberLock.lock();
-	return (ddfsStatus(DDFS_FAILURE));
 	clustermemberLock.unlock();
+	return (ddfsStatus(DDFS_FAILURE));
 }
 
 ddfsStatus ddfsClusterMemberPaxos::isDead() {
 	clustermemberLock.lock();
-	return (ddfsStatus(DDFS_FAILURE));
 	clustermemberLock.unlock();
+	return (ddfsStatus(DDFS_FAILURE));
 }
 
 clusterMemberState ddfsClusterMemberPaxos::getCurrentState() {
 	clustermemberLock.lock();
-	return memberState;	
 	clustermemberLock.unlock();
+	return memberState;	
 }
 
 ddfsStatus ddfsClusterMemberPaxos::setCurrentState(clusterMemberState newState) {
@@ -58,8 +67,8 @@ void ddfsClusterMemberPaxos::setMemberID(int newMemberID) {
 
 int ddfsClusterMemberPaxos::getMemberID() {
 	clustermemberLock.lock();
-	return memberID;
 	clustermemberLock.unlock();
+	return memberID;
 }
 
 void ddfsClusterMemberPaxos::setUniqueIdentification(int newIdentifier) {
@@ -72,8 +81,11 @@ int ddfsClusterMemberPaxos::getUniqueIdentification() {
 }
 
 ddfsStatus ddfsClusterMemberPaxos::sendClusterMetaData(ddfsClusterMessagePaxos *message) {
+    /* Need to have a reference of network packet and send the buffer to it */
+    ddfsUdpConnection network;
 
-
+    /* TODO: Register a callback function */
+    network.sendData(message->returnBuffer(), message->returnBufferSize(), NULL);
 	return (ddfsStatus(DDFS_OK));
 }
 

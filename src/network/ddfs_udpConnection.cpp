@@ -23,7 +23,7 @@
 
 ddfsLogger &global_logger = ddfsLogger::getInstance();
 
-UdpConnection::UdpConnection() {
+ddfsUdpConnection::ddfsUdpConnection() {
 	network_type = DDFS_NETWORK_UDP;
 }
 
@@ -44,7 +44,7 @@ UdpConnection::UdpConnection() {
  * @return DDFS_OK	Success
  * @return DDFS_FAILURE	Failure
  */
-ddfsStatus UdpConnection::openConnection(bool isClient, string serverIp) {
+ddfsStatus ddfsUdpConnection::openConnection(bool isClient, string serverIp) {
 	struct sockaddr_in server_addr;
 	int server_sockfd = 0;
 
@@ -77,7 +77,7 @@ ddfsStatus UdpConnection::openConnection(bool isClient, string serverIp) {
 		/* Start a thread that would create udp connections with other
 		 * nodes in the cluster.
 		 */
-		if(!pthread_create(&bk_thread, NULL, &UdpConnection::bk_routine, NULL)) {
+		if(!pthread_create(&bk_thread, NULL, &ddfsUdpConnection::bk_routine, NULL)) {
 			global_logger << ddfsLogger::LOG_WARNING
 				<< "UDP ::Successfully created the background thread."
 				<< strerror(errno) <<"\n";
@@ -106,7 +106,7 @@ ddfsStatus UdpConnection::openConnection(bool isClient, string serverIp) {
  * @return  DDFS_HOST_DOWN	Host is down
  * @return  DDFS_FAILURE	Failure
  */
-ddfsStatus UdpConnection::sendData(void *data, int size, void (*fn)(int)) {
+ddfsStatus ddfsUdpConnection::sendData(void *data, int size, void (*fn)(int)) {
 	return (ddfsStatus(DDFS_FAILURE));
 }
 /*	receiveData			*/
@@ -120,7 +120,7 @@ ddfsStatus UdpConnection::sendData(void *data, int size, void (*fn)(int)) {
  * @return  DDFS_HOST_DOWN	Host is down
  * @return  DDFS_FAILURE		Failure
  */
-ddfsStatus UdpConnection::receiveData(void *des, int requestedSize, int *actualSize) {
+ddfsStatus ddfsUdpConnection::receiveData(void *des, int requestedSize, int *actualSize) {
 	return (ddfsStatus(DDFS_FAILURE));
 }
 /*	checkConnection			*/
@@ -134,7 +134,7 @@ ddfsStatus UdpConnection::receiveData(void *des, int requestedSize, int *actualS
  * @return   DDFS_HOST_DOWN	Host is down
  * @return   DDFS_FAILURE	Failure
  */
-ddfsStatus UdpConnection::checkConnection() {
+ddfsStatus ddfsUdpConnection::checkConnection() {
 	return (ddfsStatus(DDFS_FAILURE));
 }
 /*	subscribe			*/
@@ -152,7 +152,7 @@ ddfsStatus UdpConnection::checkConnection() {
  * @return   DDFS_OK		Success
  * @return   DDFS_FAILURE	Failure
  */
-ddfsStatus UdpConnection::subscribe(void (*)(int)) {
+ddfsStatus ddfsUdpConnection::subscribe(void (*)(int)) {
 	return (ddfsStatus(DDFS_FAILURE));
 }
 /*	closeConnection			*/
@@ -167,15 +167,15 @@ ddfsStatus UdpConnection::subscribe(void (*)(int)) {
  * @return   DDFS_OK		Success
  * @return   DDFS_FAILURE	Failure
  */
-ddfsStatus UdpConnection::closeConnection() {
+ddfsStatus ddfsUdpConnection::closeConnection() {
 
 	/* 1. Kill the background process.
 	 * 2. Disconnect from all the servers.
 	 */
-	int return_value;
-	void *value_ptr = &return_value;
-	pthread_join(bk_thread, &value_ptr);
-	return (ddfsStatus(DDFS_FAILURE));
+    int return_value;
+    void *value_ptr = &return_value;
+    pthread_join(bk_thread, &value_ptr);
+    return (ddfsStatus(DDFS_FAILURE));
 }
 
 /*	copyData			*/
@@ -199,7 +199,7 @@ ddfsStatus UdpConnection::closeConnection() {
  * @return   DDFS_NETWORK_UNDERRUN	Data from connection is less than asked for
  * @return   DDFS_FAILURE		Failure
  */
-ddfsStatus UdpConnection::copyData(void *des, int requestedSize, int *actualSize) {
+ddfsStatus ddfsUdpConnection::copyData(void *des, int requestedSize, int *actualSize) {
 	return (ddfsStatus(DDFS_FAILURE));
 }
 
@@ -216,7 +216,7 @@ ddfsStatus UdpConnection::copyData(void *des, int requestedSize, int *actualSize
  *
  * @return   None.
  */
-void* UdpConnection::bk_routine(void *arg) {
+void* ddfsUdpConnection::bk_routine(void *arg) {
 #if 0
 	struct sockaddr_in server_addr;
 	client_sockfd = 0;
@@ -271,3 +271,4 @@ void* UdpConnection::bk_routine(void *arg) {
 	pthread_exit(NULL);
 
 }
+

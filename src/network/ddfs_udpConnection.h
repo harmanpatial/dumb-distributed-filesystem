@@ -29,10 +29,10 @@
 #define MAX_CLUSTER_NODES	4
 #define MAX_UDP_CONNECTIONS	MAX_CLUSTER_NODES
 
-class UdpConnection : public Network {
+class ddfsUdpConnection : public Network {
 public:
-	UdpConnection();
-	~UdpConnection();
+	ddfsUdpConnection();
+	~ddfsUdpConnection();
 
 #if 0
 	/* TODO : Why do we need this ?? */
@@ -58,12 +58,13 @@ public:
 	 * -- Lost connection with a existing node in the cluster.
 	 * -- Any change in the status of the connection.
 	 */
-	pthread_t bk_thread;
-	static void* bk_routine(void *);
+    pthread_t bk_thread;
+    static void* bk_routine(void *);
 private:
-	int server_sockfd_k;
-	int client_sockfd[MAX_UDP_CONNECTIONS];
-	int client_status[MAX_UDP_CONNECTIONS];
+    int server_sockfd_k;
+//	int client_sockfd[MAX_UDP_CONNECTIONS];
+//	int client_status[MAX_UDP_CONNECTIONS];
+
 };
 
 #endif /* Ending DDFS_UDPCONNECTION_H */
