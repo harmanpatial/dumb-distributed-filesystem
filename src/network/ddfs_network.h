@@ -1,16 +1,35 @@
 /**
  * @file ddfs_network.h
  *
- * Module for managing network communication.
+ * Module for managing communication between nodes.
  *
- * This is the module that would be responsible for network
- * data management.
+ * This is the module that would be responsible for communication 
+ * beween the cluster nodes.
+ * Most network protocol work on client/server model. In this case,
+ * this module would manage both the connection.
+ *
+ *________________________________________________
+ *  localNode           remoteNode
+ *------------------------------------------------
+ *
+ * Server   <------->   Client
+ * Client   <------->   Server
+ *
  * Primary responsibility of this module :
  *
  * 1. Open/Close connection.
  * 2. Send/Receive data from network.
  * 3. Notify other modules about the lost of other nodes in the network/cluster.
- * 4. Network congestion detection and prevention.
+ * 4. Network congestion detection and prevention(If applicable).
+ *
+ * This is the module that would be responsible for network
+ * data management.
+ *
+ * One network instance is created per remote node.
+ * Connection is between localNode <----> remoteNode.
+ *
+ * There is one to one relation between udpConnection and MemberPaxos.
+ * For the local MemberPaxos there is no network instance.
  *
  * TODO:
  * 1. Look into zero copy implementation.
@@ -31,13 +50,16 @@ enum DDFS_NETWORK_TYPE {
 	DDFS_NETWORK_ISCSI
 };
 
+template <typename T_remoteNodeUniqueID>
 class Network {
-protected:
+public:
 	/* @sa openConnection				*/
 	/**
 	 * @sa openConnection
 	 *
 	 * @brief - Open a UDP connection.
+	 *
+	 * @param   data		Pointer to the data that needs to be send
 	 *
 	 * Open a UDP connection that would be used to
 	 * communicate with other nodes in the DFS.
@@ -45,7 +67,7 @@ protected:
 	 * @return DDFS_OK	Success
 	 * @return DDFS_FAILURE	Failure
 	 */
-	virtual ddfsStatus openConnection(bool isClient, string specificData) = 0;
+	virtual ddfsStatus openConnection(T_remoteNodeUniqueID nodeUniqueID) = 0;
 	/*	sendData			*/
 	/**
 	 * @brief   Send data across.
@@ -145,9 +167,9 @@ protected:
 	virtual ddfsStatus copyData(void *des, int requestedSize, int *actualSize) = 0;
 
 	DDFS_NETWORK_TYPE network_type;
-public:
+//public:
 //	Network();
-	~Network();
+//	~Network();
 };
 
 #endif /* DDFS_NETWORK_H */

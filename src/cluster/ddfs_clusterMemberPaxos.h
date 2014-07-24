@@ -73,6 +73,8 @@ private:
 	/* Mutex lock for this object*/
 	std::mutex clustermemberLock;
 
+    /* HostName of this cluster member */
+    string hostName;
 	ddfsClusterMemberPaxos(const ddfsClusterMemberPaxos &other);  /* copy constructor */
 }; // class end
 

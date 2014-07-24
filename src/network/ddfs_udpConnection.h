@@ -1,7 +1,7 @@
 /*
  * @file ddfs_udpConnection.h
  *
- * Module for managing network communication.
+ * @brief Module for managing network communication.
  *
  * This is the module that would be responsible for network
  * data management.
@@ -18,6 +18,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 #include <pthread.h>
 #include <unistd.h>
 
@@ -25,11 +26,12 @@
 #include "../logger/ddfs_fileLogger.h"
 #include "../global/ddfs_status.h"
 
+#define DDFS_HEADE_SIZE     12
 #define DDFS_SERVER_PORT	5000
 #define MAX_CLUSTER_NODES	4
 #define MAX_UDP_CONNECTIONS	MAX_CLUSTER_NODES
 
-class ddfsUdpConnection : public Network {
+class ddfsUdpConnection : protected Network<string>{
 public:
 	ddfsUdpConnection();
 	~ddfsUdpConnection();
@@ -38,7 +40,7 @@ public:
 	/* TODO : Why do we need this ?? */
 	static const string client_list[MAX_CLUSTER_NODES];
 #endif	
-	ddfsStatus openConnection(bool, string specific_data);
+	ddfsStatus openConnection(string nodeUniqueID);
 	ddfsStatus sendData(void *data, int size, void (*fn)(int));
 	ddfsStatus receiveData(void *des, int requestedSize,
 				int *actualSize);
@@ -61,10 +63,14 @@ public:
     pthread_t bk_thread;
     static void* bk_routine(void *);
 private:
-    int server_sockfd_k;
-//	int client_sockfd[MAX_UDP_CONNECTIONS];
-//	int client_status[MAX_UDP_CONNECTIONS];
-
+    int serverSocketFD;
+    int clientSocketFD;
+    string remoteNodeHostName;
+    /* This contains the DDFS buffer handler.
+     * Each entry in this buffer points to
+     * ddfs header and a pointer to where the data(if any) is.
+     */
+    void *tempBuffer[512];
 };
 
 #endif /* Ending DDFS_UDPCONNECTION_H */

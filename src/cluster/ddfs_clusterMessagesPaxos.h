@@ -89,12 +89,12 @@ be attached in this packet. "Total Length".
 
 /*  Packet Header */
 typedef struct {
-	uint8_t version;
-	uint8_t typeOfService;
-	uint16_t totalLength;
-    uint32_t Reserved1;
-    uint32_t Reserved2;
-} __attribute__((packed)) ddfsClusterHeader;
+	uint8_t version;        /* 1 bytes */
+	uint8_t typeOfService;  /* 1 bytes */
+	uint16_t totalLength;   /* 2 bytes */
+    uint32_t Reserved1;     /* 4 bytes */
+    uint32_t Reserved2;     /* 4 bytes */
+} __attribute__((packed)) ddfsClusterHeader;    /* Total 12 bytes */
 
 /*  Packet cluster message */
 typedef struct {

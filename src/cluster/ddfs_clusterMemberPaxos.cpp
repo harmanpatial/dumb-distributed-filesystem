@@ -30,7 +30,7 @@ ddfsStatus ddfsClusterMemberPaxos::init(bool isLocalNode) {
 	    return (ddfsStatus(DDFS_FAILURE));
 
     /* For local node, need to initialize the underline network class */
-    
+    network.openConnection(hostName);
     return (ddfsStatus(DDFS_OK));
 }
 
