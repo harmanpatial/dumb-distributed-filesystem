@@ -17,8 +17,6 @@
 
 #include "../global/ddfs_status.h"
 
-using namespace std;
-
 /**
  * @class ddfsClusterMessagesPaxos
  *
@@ -113,6 +111,20 @@ typedef struct {
     uint16_t Reserved1;
     uint64_t uniqueID;
 } __attribute__((packed)) ddfsClusterData;
+
+typedef struct {
+    uint8_t typeOfService;
+    uint16_t totalLength;
+    void *data;
+    /* Following entries in used only for internal data manipulation */
+    uint64_t uniqueID;
+} requestQEntry;
+
+typedef struct {
+    uint8_t typeOfService;
+    uint16_t totalLength;
+    void *data;
+} responseQEntry; 
 
 /*!
  *  \class  ddfsClusterMessagePaxos

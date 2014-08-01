@@ -1,6 +1,6 @@
 
 CC=g++
-CFLAGS=-c -Winline -Wall -Werror -pedantic-errors
+CFLAGS=-c -std=c++11 -Winline -Wall -Werror -pedantic-errors
 LDFLAGS=
 
 SOURCES = ddfs_status.cpp ddfs_global.cpp

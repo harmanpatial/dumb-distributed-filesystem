@@ -22,8 +22,6 @@
 #include <ifaddrs.h>
 #include <unistd.h>
 
-using namespace std;
-
 ddfsLogger &global_logger = ddfsLogger::getInstance();
  
 ddfsClusterPaxos::ddfsClusterPaxos() {

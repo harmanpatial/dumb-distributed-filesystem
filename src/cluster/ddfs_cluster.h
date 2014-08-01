@@ -15,10 +15,10 @@
 #include <string>
 #include <list>
 
+using std::list;
+
 #include "ddfs_clusterMember.h"
 #include "../global/ddfs_status.h"
-
-using namespace std;
 
 /**
  * \class ddfsCluster

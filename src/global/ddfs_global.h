@@ -13,6 +13,8 @@
 #include <iostream>
 #include <string>
 
+using std::string;
+
 #include "ddfs_status.h"
 #include "./../logger/ddfs_fileLogger.h"
 

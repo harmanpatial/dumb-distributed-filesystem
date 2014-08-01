@@ -16,8 +16,6 @@
 
 #include "../global/ddfs_status.h"
 
-using namespace std;
-
 /**
  * @class ddfsClusterMember
  *

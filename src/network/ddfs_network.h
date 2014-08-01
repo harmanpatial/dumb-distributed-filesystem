@@ -41,8 +41,6 @@
 #define DDFS_NETWORK_H
 #include "../global/ddfs_status.h"
 
-using namespace std;
-
 enum DDFS_NETWORK_TYPE {
 	DDFS_NETWORK_TCP,
 	DDFS_NETWORK_UDP,

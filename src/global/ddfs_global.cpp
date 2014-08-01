@@ -10,8 +10,6 @@
 
 #include <string>
 
-using namespace std;
-
 #include "ddfs_global.h"
 
 #include "./../cluster/ddfs_clusterPaxos.h"

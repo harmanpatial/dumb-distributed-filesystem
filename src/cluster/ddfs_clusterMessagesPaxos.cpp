@@ -15,8 +15,6 @@
 #include "ddfs_clusterMessagesPaxos.h"
 #include "../global/ddfs_status.h"
 
-using namespace std;
-
 /**
  * @class ddfsClusterMessageMessages
  *

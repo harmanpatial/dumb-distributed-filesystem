@@ -20,8 +20,6 @@
 #include "../network/ddfs_udpConnection.h"
 #include "../global/ddfs_status.h"
 
-using namespace std;
-
 enum clusterMemberState {
 	s_clusterMemberOnline	= 0, /* cluster member is online. */
 	s_clusterMemberOffline,
@@ -70,8 +68,11 @@ private:
 	clusterMemberState memberState;
 	/* Current state of the cluster member */
 	ddfsUdpConnection network;
-	/* Mutex lock for this object*/
+	/* Mutex lock for this object */
 	std::mutex clustermemberLock;
+
+    /* Queue for the Request passed to the network layer */
+    std::queue <requestQEntry *> requestQueue;
 
     /* HostName of this cluster member */
     string hostName;

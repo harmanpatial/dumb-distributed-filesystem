@@ -19,8 +19,6 @@
 #include "ddfs_clusterMemberPaxos.h"
 #include "../global/ddfs_status.h"
 
-using namespace std;
-
 /**
  * @class ddfsClusterPaxos
  *

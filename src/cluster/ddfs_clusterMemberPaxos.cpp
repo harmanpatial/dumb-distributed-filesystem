@@ -15,8 +15,6 @@
 #include "ddfs_clusterMemberPaxos.h"
 #include "../global/ddfs_status.h"
 
-using namespace std;
-
 ddfsClusterMemberPaxos::ddfsClusterMemberPaxos() {
 	clusterID = -1;
 	memberID = -1;
@@ -31,6 +29,9 @@ ddfsStatus ddfsClusterMemberPaxos::init(bool isLocalNode) {
 
     /* For local node, need to initialize the underline network class */
     network.openConnection(hostName);
+    /* Allocate request and response queues */
+    network.setupQueues(requestQueue); 
+
     return (ddfsStatus(DDFS_OK));
 }
 

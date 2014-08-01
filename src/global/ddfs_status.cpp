@@ -9,8 +9,6 @@
 #include <iostream>
 #include "ddfs_status.h"
 
-using namespace std;
-
 ddfsStatus::ddfsStatus(DDFS_STATUS local_status) {
 	status = local_status;
 }
