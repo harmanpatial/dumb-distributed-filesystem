@@ -14,6 +14,7 @@
 
 #include <iostream>
 #include <vector>
+#include <array>
 #include <queue>
 #include <thread>
 #include <strings.h>
@@ -26,6 +27,7 @@
 
 using std::string;
 using std::queue;
+using std::array;
 using std::mutex;
 
 #include "ddfs_network.h"
@@ -33,10 +35,30 @@ using std::mutex;
 #include "../logger/ddfs_fileLogger.h"
 #include "../global/ddfs_status.h"
 
-#define DDFS_HEADE_SIZE     12
 #define DDFS_SERVER_PORT	5000
 #define MAX_CLUSTER_NODES	4
 #define MAX_UDP_CONNECTIONS	MAX_CLUSTER_NODES
+
+struct responseQueue_T;
+
+typedef struct {
+    std::queue <requestQEntry *> *dataBuffer;
+    std::mutex rLock;
+    struct responseQueue_T *corrResponseQueue;
+}requestQueue;
+
+typedef struct responseQueue_T {
+    std::queue <responseQEntry *> *dataBuffer;
+    std::mutex rLock;
+    requestQueue *corrRequestQueue;
+
+    /* Subscription is bound to response queues.
+     * Each component should create it's req-rsp queue
+     * when they want to transfer data with this particular
+     * node.
+     */
+    std::vector <std::queue<void (*)(int)>> subscriptionFns;
+}responseQueue;
 
 class ddfsUdpConnection : protected Network<string>{
 public:
@@ -48,12 +70,13 @@ public:
 	static const string client_list[MAX_CLUSTER_NODES];
 #endif	
 	ddfsStatus openConnection(string nodeUniqueID);
-    ddfsStatus setupQueues(std::queue <requestQEntry *> rQueue);
-	ddfsStatus sendData(void *data, int size, void (*fn)(int));
+    ddfsStatus setupQueues(std::queue <requestQEntry *> *reqQueue,
+                        std::queue <responseQEntry *> *rspQueue, void *privatePtr);
+	ddfsStatus sendData(void *data, int size, void *privatePtr);
 	ddfsStatus receiveData(void *des, int requestedSize,
 				int *actualSize);
 	ddfsStatus checkConnection();
-	ddfsStatus subscribe(void (*)(int));
+	ddfsStatus subscribe(void (*)(int), void *privatePtr);
 	ddfsStatus closeConnection();
 	ddfsStatus copyData(void *des, int requestedSize,
 			int *actualSize);
@@ -78,10 +101,10 @@ private:
     uint32_t destinationAddrSize;
 
     /* Request/Response Queues */
-    std::queue <requestQEntry *> requestQueue;
-    std::mutex requestQLock;
-    std::queue <requestQEntry *> responseQueue;
-    std::mutex responseQLock;
+    std::mutex queuesLock;
+
+    std::array <requestQueue *, 128> requestQueues;
+    std::array <responseQueue *, 128> responseQueues;
 
     /* There is no need for keeping outstanding command list
      * If we are unable to send to data due to send/recieve
@@ -99,11 +122,8 @@ private:
     /* TODO: Following fields are only for analysis */
     class networkAnalysis;
 
-    /* This contains the DDFS buffer handler.
-     * Each entry in this buffer points to
-     * ddfs header and a pointer to where the data(if any) is.
-     */
-    void *tempBuffer[512];
+    /* Just a temp buffer for the current incoming message */
+    uint64_t tempBuffer[4096];
 };
 
 #endif /* Ending DDFS_UDPCONNECTION_H */

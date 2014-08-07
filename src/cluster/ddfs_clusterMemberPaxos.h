@@ -71,8 +71,10 @@ private:
 	/* Mutex lock for this object */
 	std::mutex clustermemberLock;
 
-    /* Queue for the Request passed to the network layer */
+    /* Request and Response queues shared with network layer */
     std::queue <requestQEntry *> requestQueue;
+    std::queue <responseQEntry *> responseQueue;
+    void *networkPrivatePtr;
 
     /* HostName of this cluster member */
     string hostName;

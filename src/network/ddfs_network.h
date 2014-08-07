@@ -84,7 +84,7 @@ public:
 	 * @return  DDFS_HOST_DOWN	Host is down
 	 * @return  DDFS_FAILURE	Failure
 	 */
-	virtual ddfsStatus sendData(void *data, int size, void (*fn)(int)) = 0;
+	virtual ddfsStatus sendData(void *data, int size, void *privatePtr) = 0;
 	/*	receiveData			*/
 	/**
 	 *
@@ -130,7 +130,7 @@ public:
 	 * @return   DDFS_OK		Success
 	 * @return   DDFS_FAILURE	Failure
 	 */
-	virtual ddfsStatus subscribe(void (*)(int)) = 0;
+	virtual ddfsStatus subscribe(void (*)(int),  void *privatePtr) = 0;
 	/*	closeConnection			*/
 	/**
 	 * @brief   Close the connection.

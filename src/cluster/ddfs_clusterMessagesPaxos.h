@@ -50,6 +50,9 @@ enum clusterMessageType {
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |    Version	|Type of Service|  	Total Length  	        |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|  			    Unique ID
+|
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |			Reserved1				
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |			Reserved2				
@@ -90,9 +93,10 @@ typedef struct {
 	uint8_t version;        /* 1 bytes */
 	uint8_t typeOfService;  /* 1 bytes */
 	uint16_t totalLength;   /* 2 bytes */
+    uint64_t uniqueID;      /* 4 bytes */
     uint32_t Reserved1;     /* 4 bytes */
     uint32_t Reserved2;     /* 4 bytes */
-} __attribute__((packed)) ddfsClusterHeader;    /* Total 12 bytes */
+} __attribute__((packed)) ddfsClusterHeader;    /* Total 16 bytes */
 
 /*  Packet cluster message */
 typedef struct {
@@ -118,6 +122,7 @@ typedef struct {
     void *data;
     /* Following entries in used only for internal data manipulation */
     uint64_t uniqueID;
+    void *privateData;
 } requestQEntry;
 
 typedef struct {

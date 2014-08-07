@@ -27,17 +27,12 @@
 ddfsLogger &global_logger = ddfsLogger::getInstance();
 
 ddfsUdpConnection::ddfsUdpConnection() {
-    int i = 0;
-
 	network_type = DDFS_NETWORK_UDP;
     serverSocketFD = -1;
     clientSocketFD = -1;
-    bzero(tempBuffer, 512);
 
     /* Pre allocating memory for storing the header */
-    for ( i =0; i < 512; i++ ) {
-        tempBuffer[i] = malloc(DDFS_HEADE_SIZE + sizeof(void *));
-    }
+    bzero(tempBuffer, 4096);
 }
 
 /* openConnection				*/
@@ -91,14 +86,9 @@ ddfsStatus ddfsUdpConnection::openConnection(string nodeUniqueID) {
      */
     bkThreads.push_back(std::thread(&ddfsUdpConnection::bk_routine, (void *) this)); 
 
-#if 0
-    if(!pthread_create(&bk_thread, NULL, &ddfsUdpConnection::bk_routine, (void *)this)) {
-        global_logger << ddfsLogger::LOG_WARNING
-            << "UDP ::Successfully created the background thread."
-            << strerror(errno) <<"\n";
-        return (ddfsStatus(DDFS_FAILURE));
-    }
-#endif
+    global_logger << ddfsLogger::LOG_INFO << "Successfully created the background thread " <<
+                    "to handle incoming messages";
+
     /* Open the socket for localNode client */
     if ((clientSocketFD = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
         global_logger << ddfsLogger::LOG_WARNING << "networkCommunication :: Unable to open client socket."
@@ -151,15 +141,16 @@ ddfsStatus ddfsUdpConnection::openConnection(string nodeUniqueID) {
  * @return  DDFS_HOST_DOWN	Host is down
  * @return  DDFS_FAILURE	Failure
  */
-ddfsStatus ddfsUdpConnection::sendData(void *data, int size, void (*fn)(int)) {
+ddfsStatus ddfsUdpConnection::sendData(void *data, int size, void *privatePtr) {
     int returnValue = 0;
     requestQEntry *entry = NULL;
+    requestQueue *rQueueInstance = (requestQueue *) privatePtr;
 
-    requestQLock.lock();
+    rQueueInstance->rLock.lock();
 
-    if(requestQueue.empty() == false) {
-        entry = requestQueue.front();
-        requestQueue.pop();
+    while(rQueueInstance->dataBuffer->empty() == false) {
+        entry = rQueueInstance->dataBuffer->front();
+        rQueueInstance->dataBuffer->pop();
             
         /* Send the data to the other node */
         returnValue = sendto(clientSocketFD, entry->data,
@@ -173,9 +164,9 @@ ddfsStatus ddfsUdpConnection::sendData(void *data, int size, void (*fn)(int)) {
         }
     }
 
-    requestQLock.unlock();
+    rQueueInstance->rLock.unlock();
     
-	return (ddfsStatus(DDFS_FAILURE));
+	return (ddfsStatus(DDFS_OK));
 }
 
 /*	receiveData			*/
@@ -190,6 +181,7 @@ ddfsStatus ddfsUdpConnection::sendData(void *data, int size, void (*fn)(int)) {
  * @return  DDFS_FAILURE		Failure
  */
 ddfsStatus ddfsUdpConnection::receiveData(void *des, int requestedSize, int *actualSize) {
+
 	return (ddfsStatus(DDFS_FAILURE));
 }
 /*	checkConnection			*/
@@ -221,9 +213,16 @@ ddfsStatus ddfsUdpConnection::checkConnection() {
  * @return   DDFS_OK		Success
  * @return   DDFS_FAILURE	Failure
  */
-ddfsStatus ddfsUdpConnection::subscribe(void (*)(int)) {
+ddfsStatus ddfsUdpConnection::subscribe(void (*subscribeFn)(int), void *privatePtr) {
+#if 0
+    int index = (int *) privatePtr;
+    std::queue<void (*)(int) subQueue = subscriptionFns[index];
+
+    subQueue.push(subscribeFn);
+#endif
 	return (ddfsStatus(DDFS_FAILURE));
 }
+
 /*	closeConnection			*/
 /**
  * @brief   Close the connection.
@@ -238,13 +237,12 @@ ddfsStatus ddfsUdpConnection::subscribe(void (*)(int)) {
  */
 ddfsStatus ddfsUdpConnection::closeConnection() {
 
-	/* Terminate the background threads.
-	 */
+	/* Terminate the background threads. */
     int size, i = 0;
 
     size = bkThreads.size();
 
-    while(i < size ) {
+    while(i < size) {
             terminateThreads[i++] = true;
     }
 
@@ -303,6 +301,9 @@ void* ddfsUdpConnection::bk_routine(void *arg) {
 	struct sockaddr_in serverAddr;
     int serverAddrLen = sizeof(struct sockaddr_in);
     struct hostent *hp;
+    //ddfsClusterHeader *header = NULL;
+    int returnLength = 0;
+    //int expectedLength = 0;
 	int ret = 0;
 
 	global_logger << ddfsLogger::LOG_WARNING << "UDP:: Started the background thread. "
@@ -321,12 +322,15 @@ void* ddfsUdpConnection::bk_routine(void *arg) {
 
     memcpy((void *)&serverAddr.sin_addr, hp->h_addr_list[0], hp->h_length);
 
+    /* Keep on listening to the port inorder to recieve data.
+     */
 	while(1) {
         /* Server port is already opened.
          * Start listening to the port.
          */
+        returnLength = 0;
         ret = recvfrom(udpInstance->serverSocketFD, (void *) udpInstance->tempBuffer,
-                        DDFS_HEADE_SIZE, 0,
+                        sizeof(ddfsClusterHeader), 0,
                         (struct sockaddr *) &serverAddr, (socklen_t *)&serverAddrLen);
 
         if(ret == -1) {
@@ -334,8 +338,14 @@ void* ddfsUdpConnection::bk_routine(void *arg) {
 						<< strerror(errno) <<"\n";
             continue;
         }
+ 
+        returnLength = ret;
 
-        
+        if(ret < sizeof(ddfsClusterHeader)) {
+	        global_logger << ddfsLogger::LOG_WARNING << "UDP:: BT : Data recieved is less that clusterheader from Host Name. "
+						<< strerror(errno) <<"\n";
+            continue;
+        }
 
         /* Periodically keep on trying to connect to the set of nodes
          * that has been configured.
@@ -352,8 +362,45 @@ void* ddfsUdpConnection::bk_routine(void *arg) {
 
 }
 
-ddfsStatus ddfsUdpConnection::setupQueues(std::queue <requestQEntry *> rQueue) {
-    requestQueue = rQueue;
+ddfsStatus ddfsUdpConnection::setupQueues(std::queue <requestQEntry *> *reqQueueBuffer,
+                                        std::queue <responseQEntry *> *rspQueueBuffer, void *privatePtr) {
+    int i=0;
+    requestQueue *reqQueue = NULL;
+    responseQueue *rspQueue = NULL;
+
+    reqQueue = (requestQueue *) malloc(sizeof(requestQueue));
+    rspQueue = (responseQueue *) malloc(sizeof(responseQueue));
+
+    reqQueue->dataBuffer = reqQueueBuffer;
+    rspQueue->dataBuffer = rspQueueBuffer;
+
+    reqQueue->corrResponseQueue = rspQueue;
+    rspQueue->corrRequestQueue = reqQueue;
+
+    queuesLock.lock();
+    
+    while(i<128) {
+        if(requestQueues[i] == NULL)
+            break;
+        i++;
+    }
+
+    if(i == 128) {
+        global_logger << ddfsLogger::LOG_WARNING << "UDP:: BT : Max. number of req/rsp queues reached : 128."
+                        << "\n";
+        free(reqQueue);
+        free(rspQueue);
+        return ddfsStatus(DDFS_OK);
+    }
+
+    requestQueues[i] = reqQueue;
+    responseQueues[i] = rspQueue;
+
+    /* This pointer would be passed to us in the sendData */
+    privatePtr = reqQueue;
+
+    queuesLock.unlock();
+
     return ddfsStatus(DDFS_OK);
     
 }

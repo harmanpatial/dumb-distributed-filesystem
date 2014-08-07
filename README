@@ -10,6 +10,6 @@ But what if you could implement only one part of it.
 DDFS is designed as set of template files for each major part of Distributed FileSystem
 eg. network, cluster algorithm, file metadata management.
 
-By only implementing the template class for a specific module, anybody can get there hands
-dirty.
+By only implementing the template class for a specific module, anybody can get handson
+with the distributed file system.
 
