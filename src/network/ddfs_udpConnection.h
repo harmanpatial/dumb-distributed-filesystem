@@ -41,6 +41,37 @@ using std::mutex;
 
 struct responseQueue_T;
 
+class ddfsSubscriptionClass {
+private:
+    std::vector<void (*)(int)> subscriptionFns;
+public:
+    void addSubscription(void (*subscribeFn)(int)) {
+        subscriptionFns.push_back(subscribeFn);
+    }
+
+    void removeAllSubscription() {
+       for(int i=0; i < subscriptionFns.size(); i++){
+                subscriptionFns.erase(subscriptionFns.begin()+i);
+        }
+    }
+
+    int removeSubscription(void (*subscribeFn)(int)) {
+       for(int i=0; i < subscriptionFns.size(); i++){
+           if(subscriptionFns[i] == subscribeFn) {
+                subscriptionFns.erase(subscriptionFns.begin()+i);
+                return 0;
+            }
+        }
+        return -1;
+    }
+
+    void callSubscription(int value) {
+       for(int i=0; i < subscriptionFns.size(); i++){
+           subscriptionFns[i](value);
+        }
+    }
+};
+
 typedef struct {
     std::queue <requestQEntry *> *dataBuffer;
     std::mutex rLock;
@@ -57,7 +88,7 @@ typedef struct responseQueue_T {
      * when they want to transfer data with this particular
      * node.
      */
-    std::vector <std::queue<void (*)(int)>> subscriptionFns;
+    ddfsSubscriptionClass subscriptions;
 }responseQueue;
 
 class ddfsUdpConnection : protected Network<string>{

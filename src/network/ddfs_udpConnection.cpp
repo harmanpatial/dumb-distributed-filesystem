@@ -181,21 +181,27 @@ ddfsStatus ddfsUdpConnection::sendData(void *data, int size, void *privatePtr) {
  * @return  DDFS_FAILURE		Failure
  */
 ddfsStatus ddfsUdpConnection::receiveData(void *des, int requestedSize, int *actualSize) {
-
+    /* No need to implement this as data tranfer is done through
+     * request and response queues. */
 	return (ddfsStatus(DDFS_FAILURE));
 }
 /*	checkConnection			*/
 /**
  * @brief   Check the connection.
  *
- * Check the connection that has been
- * previously established.
+ * Check the connection that has been previously established.
  *
  * @return   DDFS_OK		Success
  * @return   DDFS_HOST_DOWN	Host is down
  * @return   DDFS_FAILURE	Failure
  */
 ddfsStatus ddfsUdpConnection::checkConnection() {
+    /* Should create a test queue and send a special DDFS packet
+     * to the server.
+     *
+     * Alternative to this is the heartbeat or maybe it could be
+     * complementary to it.
+     */
 	return (ddfsStatus(DDFS_FAILURE));
 }
 /*	subscribe			*/
@@ -214,13 +220,22 @@ ddfsStatus ddfsUdpConnection::checkConnection() {
  * @return   DDFS_FAILURE	Failure
  */
 ddfsStatus ddfsUdpConnection::subscribe(void (*subscribeFn)(int), void *privatePtr) {
-#if 0
-    int index = (int *) privatePtr;
-    std::queue<void (*)(int) subQueue = subscriptionFns[index];
+    requestQEntry *entry = NULL;
+    responseQueue *rspQInstance = NULL;
+    requestQueue *reqQInstance = (requestQueue *) privatePtr;
 
-    subQueue.push(subscribeFn);
-#endif
-	return (ddfsStatus(DDFS_FAILURE));
+    if (privatePtr == NULL) {
+            global_logger << ddfsLogger::LOG_INFO << "UDP::Send: Null privatePtr passed."
+                <<  entry->uniqueID
+                << strerror(errno) << "\n";
+            return (ddfsStatus(DDFS_FAILURE));
+    }
+
+    rspQInstance = reqQInstance->corrResponseQueue;
+
+    rspQInstance->subscriptions.addSubscription(subscribeFn);
+
+	return (ddfsStatus(DDFS_OK));
 }
 
 /*	closeConnection			*/
@@ -255,7 +270,35 @@ ddfsStatus ddfsUdpConnection::closeConnection() {
     while ( bkThreads.empty() == false )
             bkThreads.pop_back();
 
-    return (ddfsStatus(DDFS_OK));
+    /* Notify all the components that have subscription */
+    i=0;
+    while((i<128)) {
+        if(responseQueues[i] == NULL)
+            continue;
+
+        /* Call all the subscription fn for this resposen queue. */
+            responseQueues[i]->subscriptions.callSubscription(-1);
+    }
+
+    /* Wait for 10 seconds for the subscribed components to
+     * perform internal cleanup.
+     */
+    sleep(10);
+
+    /* Clean all the memory allocated for the req/rsp queues.
+     * Don't free the dataBuffer as that is allocated by the
+     * upper componenets.
+     */
+    i =0;
+    while((i<128)) {
+        if(responseQueues[i] == NULL)
+            continue;
+
+        /* Remove all the subscription fn for this resposen queue. */
+        responseQueues[i]->subscriptions.removeAllSubscription();
+    }
+
+	return (ddfsStatus(DDFS_OK));
 }
 
 /*	copyData			*/
