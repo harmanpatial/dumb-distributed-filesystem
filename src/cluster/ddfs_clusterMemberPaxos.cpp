@@ -13,7 +13,8 @@
 #include <string>
 
 #include "ddfs_clusterMemberPaxos.h"
-#include "../global/ddfs_status.h"
+
+ddfsLogger &global_logger = ddfsLogger::getInstance();
 
 ddfsClusterMemberPaxos::ddfsClusterMemberPaxos() {
 	clusterID = -1;
@@ -21,74 +22,130 @@ ddfsClusterMemberPaxos::ddfsClusterMemberPaxos() {
 	uniqueIdentification = -1;
 	memberState = s_clusterMemberUnknown;
     networkPrivatePtr = NULL;
+
 	return;
 }
 
-ddfsStatus ddfsClusterMemberPaxos::init(bool isLocalNode) {
-    if (isLocalNode == false)
-	    return (ddfsStatus(DDFS_FAILURE));
+ddfsStatus ddfsClusterMemberPaxos::init(bool isLocalNode, int serverSocketFD) {
+    if (isLocalNode == false) {
+        /* Get the server socket for the local Cluster Member Node */
+    }
 
-    /* For local node, need to initialize the underline network class */
-    network.openConnection(hostName);
+    /* Initialize the underline network class */
+    network.openConnection(hostName, -1);
     /* Allocate request and response queues */
     network.setupQueues(&requestQueue, &responseQueue, networkPrivatePtr); 
 
+    /* Incase this instance is of localNode, 
+     * now it's ready to exchange DDFS packages
+     */
     return (ddfsStatus(DDFS_OK));
 }
 
 ddfsStatus ddfsClusterMemberPaxos::isOnline() {
-	clustermemberLock.lock();
-	clustermemberLock.unlock();
+    bool stateOnline = false;
+
+	clusterMemberLock.lock();
+    if(memberState == s_clusterMemberOnline)
+        stateOnline = true;
+
+	clusterMemberLock.unlock();
+
+    if(stateOnline == true)
+            return (ddfsStatus(DDFS_OK));
+
 	return (ddfsStatus(DDFS_FAILURE));
 }
 
 ddfsStatus ddfsClusterMemberPaxos::isDead() {
-	clustermemberLock.lock();
-	clustermemberLock.unlock();
+    bool stateOnline = false;
+
+	clusterMemberLock.lock();
+    if(memberState == s_clusterMemberDead)
+        stateOnline = true;
+
+	clusterMemberLock.unlock();
+
+    if(stateOnline == true)
+            return (ddfsStatus(DDFS_OK));
+
 	return (ddfsStatus(DDFS_FAILURE));
 }
 
 clusterMemberState ddfsClusterMemberPaxos::getCurrentState() {
-	clustermemberLock.lock();
-	clustermemberLock.unlock();
 	return memberState;	
 }
 
 ddfsStatus ddfsClusterMemberPaxos::setCurrentState(clusterMemberState newState) {
-	clustermemberLock.lock();
+	clusterMemberLock.lock();
 	memberState = newState;
-	clustermemberLock.unlock();
+	clusterMemberLock.unlock();
 	return (ddfsStatus(DDFS_OK));
 }
 
 void ddfsClusterMemberPaxos::setMemberID(int newMemberID) {
-	clustermemberLock.lock();
+	clusterMemberLock.lock();
 	memberID = newMemberID;
-	clustermemberLock.unlock();
+	clusterMemberLock.unlock();
 }
 
 int ddfsClusterMemberPaxos::getMemberID() {
-	clustermemberLock.lock();
-	clustermemberLock.unlock();
 	return memberID;
 }
 
 void ddfsClusterMemberPaxos::setUniqueIdentification(int newIdentifier) {
-	clustermemberLock.lock();
+	clusterMemberLock.lock();
 	uniqueIdentification =  newIdentifier;
-	clustermemberLock.unlock();
+	clusterMemberLock.unlock();
 }
+
 int ddfsClusterMemberPaxos::getUniqueIdentification() {
 	return uniqueIdentification;
 }
 
-ddfsStatus ddfsClusterMemberPaxos::sendClusterMetaData(ddfsClusterMessagePaxos *message) {
-    /* Need to have a reference of network packet and send the buffer to it */
-    ddfsUdpConnection network;
+void ddfsClusterMemberPaxos::registerHandler(int value) {
 
-    /* TODO: Register a callback function */
-    network.sendData(message->returnBuffer(), message->returnBufferSize(), NULL);
-	return (ddfsStatus(DDFS_OK));
+    if(value == -1) {
+        /* Network class is closing the connection.
+         *  */
+    }
+
+
 }
 
+int ddfsClusterMemberPaxos::getLocalSocket() {
+    int serverSocket;
+    network.getServerSocket(&serverSocket);
+    return serverSocket;
+}
+
+ddfsStatus ddfsClusterMemberPaxos::sendClusterMetaData(ddfsClusterMessagePaxos *message) {
+    /* Need to have a reference of network packet and send the buffer to it */
+    requestQEntry *request = NULL;
+    ddfsClusterHeader *packetHeader = NULL;
+
+    if(message == NULL) {
+        global_logger << ddfsLogger::LOG_WARNING
+                    << "clusterMember :: Unable to open client socket."
+                    << strerror(errno) << "\n";
+        return (ddfsStatus(DDFS_FAILURE));
+    }
+
+    request = (requestQEntry *) malloc(sizeof(requestQEntry));
+
+    packetHeader = (ddfsClusterHeader *) message;
+    /*************START OF DAY *************************/
+    request->typeOfService = packetHeader->typeOfService;
+    request->totalLength = packetHeader->totalLength;
+    request->data = message;
+    request->uniqueID = packetHeader->uniqueID;
+    request->privateData = NULL;
+    
+    requestQueue.push(request);
+    /* TODO: Register a callback function */
+    /* Push the data to the request queue */
+    network.sendData(message->returnBuffer(), message->returnBufferSize(),
+                    networkPrivatePtr);
+	return (ddfsStatus(DDFS_OK));
+}
 

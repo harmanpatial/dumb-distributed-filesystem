@@ -32,7 +32,7 @@ ddfsClusterPaxos::ddfsClusterPaxos() {
 
 	localClusterMember = new ddfsClusterMemberPaxos;
     /* Initialize the local node */
-    localClusterMember->init(true);
+    localClusterMember->init(true, -1);
 	return;
 }
 
@@ -112,17 +112,28 @@ void ddfsClusterPaxos::asyncEventHandling(void *buffer, int bufferCount) {
 
 }
 
-ddfsStatus ddfsClusterPaxos::addMember(ddfsClusterMemberPaxos *newMember) {
+//ddfsStatus ddfsClusterPaxos::addMember(ddfsClusterMemberPaxos *newMember) {
+ddfsStatus ddfsClusterPaxos::addMember(int uniqueIdentifiction) {
     
     list<ddfsClusterMemberPaxos *>::iterator clusterMemberIter;
     
     for(clusterMemberIter = clusterMembers.begin(); clusterMemberIter != clusterMembers.end(); clusterMemberIter++) {
-            if((*clusterMemberIter)->getUniqueIdentification() == newMember->getUniqueIdentification()) {
-                global_logger << ddfsLogger::LOG_WARNING << "Node " << (*clusterMemberIter)->getUniqueIdentification() << " is already configured to be part of cluster";
+            //if((*clusterMemberIter)->getUniqueIdentification() == newMember->getUniqueIdentification()) {
+            if((*clusterMemberIter)->getUniqueIdentification() == uniqueIdentifiction) {
+                global_logger << ddfsLogger::LOG_WARNING << "Node "
+                                << (*clusterMemberIter)->getUniqueIdentification()
+                                << " is already configured to be part of cluster";
                 return (ddfsStatus(DDFS_CLUSTER_ALREADY_MEMBER));
             }
     }
 
+    /* NOTE : This would always be a remote node.
+     *        Local node is added during ClusterPaxos class
+     *        initialization.
+     */
+    ddfsClusterMemberPaxos *newMember = new ddfsClusterMemberPaxos();
+
+    newMember->init(false, localClusterMember->getLocalSocket());
     clusterMembers.push_back(newMember);
     clusterMemberCount++;
 	return (ddfsStatus(DDFS_OK));
@@ -132,18 +143,21 @@ ddfsStatus ddfsClusterPaxos::addMembers() {
 	return (ddfsStatus(DDFS_FAILURE));
 }
 
-ddfsStatus ddfsClusterPaxos::deleteMember(ddfsClusterMemberPaxos *deletedMember) {
+ddfsStatus ddfsClusterPaxos::deleteMember(int uniqueIdentifiction) {
     list<ddfsClusterMemberPaxos *>::iterator clusterMemberIter;
+    ddfsClusterMemberPaxos *deletedMember = NULL;
     bool exists = false;
     
     for(clusterMemberIter = clusterMembers.begin(); clusterMemberIter != clusterMembers.end(); clusterMemberIter++) {
-            if((*clusterMemberIter)->getUniqueIdentification() == deletedMember->getUniqueIdentification()) {
+            if((*clusterMemberIter)->getUniqueIdentification() == uniqueIdentifiction) {
                 exists = true;
+                deletedMember = *clusterMemberIter;
             }
     }
     if(exists == false) {
-        
-        global_logger << ddfsLogger::LOG_WARNING << "Node " << (*clusterMemberIter)->getUniqueIdentification() << " is not configured to be part of cluster.";
+        global_logger << ddfsLogger::LOG_WARNING << "Node "
+                    << (*clusterMemberIter)->getUniqueIdentification()
+                    << " is not configured to be part of cluster.";
         return (ddfsStatus(DDFS_GENERAL_PARAM_INVALID));
     }
 

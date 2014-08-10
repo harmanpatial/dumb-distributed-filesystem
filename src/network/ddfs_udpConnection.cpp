@@ -45,21 +45,58 @@ ddfsUdpConnection::ddfsUdpConnection() {
  * We would start a server port as well as a client port.
  *
  * @param   nodeUniqueID[in]	Node Host address.
+ * @parm    serverSocket[in]    Server socketfd for the local server port.
  *
  * @return DDFS_OK	Success
  * @return DDFS_FAILURE	Failure
  */
-ddfsStatus ddfsUdpConnection::openConnection(string nodeUniqueID) {
+ddfsStatus ddfsUdpConnection::openConnection(string nodeUniqueID, int serverSocket) {
 	struct sockaddr_in serverAddr;
     int lengthServerAddr;
 	struct sockaddr_in clientAddr;
     int lengthClientAddr;
+
+    /* Open the socket for localNode client */
+    if ((clientSocketFD = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
+        global_logger << ddfsLogger::LOG_WARNING
+                    << "networkCommunication :: Unable to open client socket."
+                    << strerror(errno) << "\n";
+        return (ddfsStatus(DDFS_FAILURE));
+    }
+
+    clientAddr.sin_family = AF_INET;
+    clientAddr.sin_port = 0; // Randomly select port
+    clientAddr.sin_addr.s_addr = inet_addr("localhost");
+    bzero(&(clientAddr.sin_zero),8);
+
+    lengthClientAddr = sizeof(clientAddr);
+    /* Bind socket with the client */
+    if (::bind(clientSocketFD,(struct sockaddr *)&clientAddr,
+        sizeof(struct sockaddr)) == -1)
+    {
+        global_logger << ddfsLogger::LOG_WARNING << "UDP::Client :: Unable to bind socket. "
+                        << strerror(errno) <<"\n";
+        return (ddfsStatus(DDFS_FAILURE));
+    }
+
+    /* Setting the destination socket addr */
+    destinationAddr.sin_family = AF_INET;
+    destinationAddr.sin_addr.s_addr = inet_addr(remoteNodeHostName.c_str());
+    destinationAddr.sin_port = htons(DDFS_SERVER_PORT);
+    destinationAddrSize = sizeof(destinationAddr);
+    
+    if ( serverSocket != -1 ) {
+        serverSocketFD = serverSocket;
+        global_logger << ddfsLogger::LOG_WARNING << "Server :: Server socket is already open.\n";
+        return (ddfsStatus(DDFS_OK));
+    }
 
 	/* Open the server socket and wait for the client connections.
      * Server connection at each node opens at well defined port DDFS_SERVER_PORT.
      */
     if ((serverSocketFD = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
         global_logger << ddfsLogger::LOG_WARNING << "Server :: Unable to open socket.\n";
+        close(clientSocketFD);
         return (ddfsStatus(DDFS_FAILURE));
     }
 
@@ -75,8 +112,13 @@ ddfsStatus ddfsUdpConnection::openConnection(string nodeUniqueID) {
     {
         global_logger << ddfsLogger::LOG_WARNING << "UDP::Server :: Unable to bind socket. "
                         << strerror(errno) <<"\n";
+        close(clientSocketFD);
+        close(serverSocketFD);
         return (ddfsStatus(DDFS_FAILURE));
     }
+
+    global_logger << ddfsLogger::LOG_INFO << "Successfully created the server socket " <<
+                    "to handle incoming messages";
 
     /* Copy the node IP to this instance */
     remoteNodeHostName = nodeUniqueID;
@@ -85,38 +127,6 @@ ddfsStatus ddfsUdpConnection::openConnection(string nodeUniqueID) {
      * the remote node(remoteNodeHostName) in the cluster.
      */
     bkThreads.push_back(std::thread(&ddfsUdpConnection::bk_routine, (void *) this)); 
-
-    global_logger << ddfsLogger::LOG_INFO << "Successfully created the background thread " <<
-                    "to handle incoming messages";
-
-    /* Open the socket for localNode client */
-    if ((clientSocketFD = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
-        global_logger << ddfsLogger::LOG_WARNING << "networkCommunication :: Unable to open client socket."
-                                << strerror(errno) << "\n";
-        return (ddfsStatus(DDFS_FAILURE));
-    }
-
-    clientAddr.sin_family = AF_INET;
-    clientAddr.sin_port = 0; // Randomly select port
-    clientAddr.sin_addr.s_addr = inet_addr("localhost");
-    bzero(&(clientAddr.sin_zero),8);
-
-    lengthClientAddr = sizeof(clientAddr);
-    /* Bind socket with the client */
-    if (bind(clientSocketFD,(struct sockaddr *)&clientAddr,
-        sizeof(struct sockaddr)) == -1)
-    {
-        global_logger << ddfsLogger::LOG_WARNING << "UDP::Client :: Unable to bind socket. "
-                        << strerror(errno) <<"\n";
-        return (ddfsStatus(DDFS_FAILURE));
-    }
-    
-
-    /* Setting the destination socket addr */
-    destinationAddr.sin_family = AF_INET;
-    destinationAddr.sin_addr.s_addr = inet_addr(remoteNodeHostName.c_str());
-    destinationAddr.sin_port = htons(DDFS_SERVER_PORT);
-    destinationAddrSize = sizeof(destinationAddr);
 
     global_logger << ddfsLogger::LOG_INFO << "UDP::Both client and server connections opened."
                 << strerror(errno) <<"\n";
@@ -146,11 +156,12 @@ ddfsStatus ddfsUdpConnection::sendData(void *data, int size, void *privatePtr) {
     requestQEntry *entry = NULL;
     requestQueue *rQueueInstance = (requestQueue *) privatePtr;
 
-    rQueueInstance->rLock.lock();
 
     while(rQueueInstance->dataBuffer->empty() == false) {
+        rQueueInstance->rLock.lock();
         entry = rQueueInstance->dataBuffer->front();
         rQueueInstance->dataBuffer->pop();
+        rQueueInstance->rLock.unlock();
             
         /* Send the data to the other node */
         returnValue = sendto(clientSocketFD, entry->data,
@@ -160,11 +171,12 @@ ddfsStatus ddfsUdpConnection::sendData(void *data, int size, void *privatePtr) {
             global_logger << ddfsLogger::LOG_INFO << "UDP::Send : Unable to send data."
                 <<  entry->uniqueID
                 << strerror(errno) << "\n";
+            /* TODO : Push a failure entry in the response queue with this uniqueID */
             return (ddfsStatus(DDFS_FAILURE));
         }
     }
 
-    rQueueInstance->rLock.unlock();
+    free(entry);
     
 	return (ddfsStatus(DDFS_OK));
 }
@@ -277,7 +289,7 @@ ddfsStatus ddfsUdpConnection::closeConnection() {
             continue;
 
         /* Call all the subscription fn for this resposen queue. */
-            responseQueues[i]->subscriptions.callSubscription(-1);
+        responseQueues[i]->subscriptions.callSubscription(-1);
     }
 
     /* Wait for 10 seconds for the subscribed components to
@@ -297,6 +309,20 @@ ddfsStatus ddfsUdpConnection::closeConnection() {
         /* Remove all the subscription fn for this resposen queue. */
         responseQueues[i]->subscriptions.removeAllSubscription();
     }
+
+    /* Close the connections */
+    close(serverSocketFD);
+    serverSocketFD = -1;
+
+    close(clientSocketFD);
+    clientSocketFD = -1;
+
+    remoteNodeHostName.replace(remoteNodeHostName.begin(),
+                            remoteNodeHostName.end(), 1, '\0');
+
+    destinationAddrSize = -1;
+
+    bzero(tempBuffer, 4096);
 
 	return (ddfsStatus(DDFS_OK));
 }
@@ -326,6 +352,12 @@ ddfsStatus ddfsUdpConnection::copyData(void *des, int requestedSize, int *actual
 	return (ddfsStatus(DDFS_FAILURE));
 }
 
+ddfsStatus ddfsUdpConnection::getServerSocket(int *retServerSocket) {
+    *retServerSocket = serverSocketFD;
+	return (ddfsStatus(DDFS_OK));
+}
+
+
 /*	bk_routine			*/
 /**
  * @brief   This is background thread routine.
@@ -344,9 +376,7 @@ void* ddfsUdpConnection::bk_routine(void *arg) {
 	struct sockaddr_in serverAddr;
     int serverAddrLen = sizeof(struct sockaddr_in);
     struct hostent *hp;
-    //ddfsClusterHeader *header = NULL;
     int returnLength = 0;
-    //int expectedLength = 0;
 	int ret = 0;
 
 	global_logger << ddfsLogger::LOG_WARNING << "UDP:: Started the background thread. "

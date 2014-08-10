@@ -43,17 +43,14 @@ ddfsStatus ddfsClusterMessagePaxos::addMessage(uint16_t type, uint64_t uuid) {
     ddfsMessage.Reserved1 = htonl(0);
 	ddfsMessage.uniqueID = htonl(uuid);
 
-	if(ddfsHeader.typeOfService == CLUSTER_MESSAGE_TOF_CLUSTER_UNKNOWN)
-		return (ddfsStatus(DDFS_FAILURE));
-
 	ddfsHeader.typeOfService = CLUSTER_MESSAGE_TOF_CLUSTER_MGMT;
 
 	/* Maximum four messages at a time are supported */
 	if(ddfsHeader.totalLength == MAX_SIZE_OF_MESSAGES)
 		return (ddfsStatus(DDFS_FAILURE));
 
-
-	memcpy((uint8_t *)message + SIZE_OF_HEADER + ddfsHeader.totalLength, &ddfsMessage, sizeof(ddfsMessage));
+	memcpy((uint8_t *)message + SIZE_OF_HEADER + ddfsHeader.totalLength,
+            &ddfsMessage, sizeof(ddfsMessage));
 
 	ddfsHeader.totalLength += SIZE_OF_MESSAGE;
 

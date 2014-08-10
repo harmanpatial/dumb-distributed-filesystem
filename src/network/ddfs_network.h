@@ -65,7 +65,7 @@ public:
 	 * @return DDFS_OK	Success
 	 * @return DDFS_FAILURE	Failure
 	 */
-	virtual ddfsStatus openConnection(T_remoteNodeUniqueID nodeUniqueID) = 0;
+	virtual ddfsStatus openConnection(T_remoteNodeUniqueID nodeUniqueID, int serverSocket) = 0;
 	/*	sendData			*/
 	/**
 	 * @brief   Send data across.

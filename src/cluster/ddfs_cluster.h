@@ -33,7 +33,7 @@ using std::list;
  * \note 
  *	 
  */
-template <typename T_ddfsClusterMember>
+template <typename T_ddfsClusterMember, typename T_ddfsMemberIdentification>
 class ddfsCluster {
 protected:
 	int clusterID;
@@ -53,9 +53,9 @@ protected:
     *               All the data is of a specific format.
     */
     virtual void asyncEventHandling(void *buffer, int bufferCount);
-	virtual ddfsStatus addMember(T_ddfsClusterMember);
+	virtual ddfsStatus addMember(T_ddfsMemberIdentification);
 	virtual ddfsStatus addMembers();
-	virtual ddfsStatus deleteMember(T_ddfsClusterMember);
+	virtual ddfsStatus deleteMember(T_ddfsMemberIdentification);
 	virtual ddfsStatus deleteMembers();
 public:
 	static const int s_clusterIDInvalid = -1;

@@ -100,7 +100,7 @@ public:
 	/* TODO : Why do we need this ?? */
 	static const string client_list[MAX_CLUSTER_NODES];
 #endif	
-	ddfsStatus openConnection(string nodeUniqueID);
+	ddfsStatus openConnection(string nodeUniqueID, int serverSocket);
     ddfsStatus setupQueues(std::queue <requestQEntry *> *reqQueue,
                         std::queue <responseQEntry *> *rspQueue, void *privatePtr);
 	ddfsStatus sendData(void *data, int size, void *privatePtr);
@@ -112,6 +112,7 @@ public:
 	ddfsStatus copyData(void *des, int requestedSize,
 			int *actualSize);
 
+    ddfsStatus getServerSocket(int *retServerSocket);
 	/* NOTE : The attributes specific to this class */
 	/* Some kind of async routine needs to be
 	 * registered with this interface, that can be called when
@@ -122,7 +123,6 @@ public:
 	 * -- Lost connection with a existing node in the cluster.
 	 * -- Any change in the status of the connection.
 	 */
-//    pthread_t bk_thread;
     static void* bk_routine(void *);
 private:
     int serverSocketFD;
