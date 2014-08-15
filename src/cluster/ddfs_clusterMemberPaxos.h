@@ -43,13 +43,13 @@ enum clusterMemberState {
  * T_clusterMemberState = clusterMemberState
  * T_clusterID = int
  * T_memberID = int
- * T_uniqueID = int
+ * T_uniqueID = string
  */
 class ddfsClusterMemberPaxos : public ddfsClusterMember<clusterMemberState, int, ddfsClusterMessagePaxos, int, int, ddfsUdpConnection<ddfsClusterMemberPaxos> > {
 public:
 	ddfsClusterMemberPaxos();
 	~ddfsClusterMemberPaxos();
-	ddfsStatus init(bool isLocalNode, int serverSocketFD);
+	ddfsStatus init(string hostn);
 	ddfsStatus isOnline();
 	ddfsStatus isDead();
 	clusterMemberState getCurrentState();
@@ -61,9 +61,13 @@ public:
 	void setMemberID(int);
 	int getMemberID();
 
-	void setUniqueIdentification(int);
+	void setUniqueIdentification(int );
 	int getUniqueIdentification();
+
+	string getHostName();
+#if 0
     int getLocalSocket();
+#endif
 	ddfsStatus sendClusterMetaData(ddfsClusterMessagePaxos *);
     void processingResponses();
     void callback(int numberOfEntries);

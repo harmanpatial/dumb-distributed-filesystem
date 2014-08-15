@@ -57,7 +57,7 @@ public:
 	 *
 	 * @brief - Open a UDP connection.
 	 *
-	 * @param   data		Pointer to the data that needs to be send
+	 * @param   nodeUniqueID    Unique ID to represent a specific node
 	 *
 	 * Open a UDP connection that would be used to
 	 * communicate with other nodes in the DFS.
@@ -65,7 +65,7 @@ public:
 	 * @return DDFS_OK	Success
 	 * @return DDFS_FAILURE	Failure
 	 */
-	virtual ddfsStatus openConnection(T_remoteNodeUniqueID nodeUniqueID, int serverSocket) = 0;
+	virtual ddfsStatus openConnection(T_remoteNodeUniqueID nodeUniqueID) = 0;
 	/*	sendData			*/
 	/**
 	 * @brief   Send data across.

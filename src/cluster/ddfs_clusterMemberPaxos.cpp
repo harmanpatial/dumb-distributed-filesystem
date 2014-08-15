@@ -30,15 +30,13 @@ ddfsClusterMemberPaxos::~ddfsClusterMemberPaxos() {
     delete(network);
 }
 
-ddfsStatus ddfsClusterMemberPaxos::init(bool isLocalNode, int serverSocketFD) {
+ddfsStatus ddfsClusterMemberPaxos::init(string hostn) {
     ddfsStatus status(DDFS_FAILURE);
 
-    if (isLocalNode == false) {
-        /* Get the server socket for the local Cluster Member Node */
-    }
+    hostName = hostn;
 
     /* Initialize the underline network class */
-    status = network->openConnection(hostName, -1);
+    status = network->openConnection(hostName);
 
     if(status.compareStatus(ddfsStatus(DDFS_OK)) == false) {
         global_logger_cmp << ddfsLogger::LOG_WARNING
@@ -143,6 +141,7 @@ int ddfsClusterMemberPaxos::getUniqueIdentification() {
 	return uniqueIdentification;
 }
 
+#if 0
 int ddfsClusterMemberPaxos::getLocalSocket() {
     int serverSocket = -1;
     ddfsStatus status(DDFS_FAILURE);
@@ -155,6 +154,7 @@ int ddfsClusterMemberPaxos::getLocalSocket() {
 
     return serverSocket;
 }
+#endif
 
 void ddfsClusterMemberPaxos::callback(int numberOfEntries) {
     /* This is a special case for when the connection is being about to
@@ -245,3 +245,7 @@ ddfsStatus ddfsClusterMemberPaxos::sendClusterMetaData(ddfsClusterMessagePaxos *
 	return (ddfsStatus(DDFS_OK));
 }
 
+
+string ddfsClusterMemberPaxos::getHostName() {
+    return hostName;
+}

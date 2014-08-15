@@ -111,7 +111,7 @@ public:
 
 	~ddfsUdpConnection() {}
 
-	ddfsStatus openConnection(string nodeUniqueID, int serverSocket)
+	ddfsStatus openConnection(string nodeUniqueID)
     {
 	struct sockaddr_in serverAddr;
     int lengthServerAddr;
@@ -147,11 +147,13 @@ public:
     destinationAddr.sin_port = htons(DDFS_SERVER_PORT);
     destinationAddrSize = sizeof(destinationAddr);
     
+#if 0
     if ( serverSocket != -1 ) {
         serverSocketFD = serverSocket;
         global_logger_tem << ddfsLogger::LOG_WARNING << "Server :: Server socket is already open.\n";
         return (ddfsStatus(DDFS_OK));
     }
+#endif
 
 	/* Open the server socket and wait for the client connections.
      * Server connection at each node opens at well defined port DDFS_SERVER_PORT.
@@ -164,18 +166,22 @@ public:
 
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(DDFS_SERVER_PORT);
-    serverAddr.sin_addr.s_addr = INADDR_ANY;
+    serverAddr.sin_addr.s_addr = inet_addr("localhost");
     bzero(&(serverAddr.sin_zero),8);
 
     lengthServerAddr = sizeof(serverAddr);
+
+    /* Making the socket as Reuseable, so muultiple Network class can bind to it */
+    int optValue = 1;
+    setsockopt(serverSocketFD, SOL_SOCKET, SO_REUSEADDR, &optValue, sizeof(optValue));
 
     /* Bind socket with the server */
     if (::bind(serverSocketFD,(struct sockaddr *)&serverAddr, sizeof(struct sockaddr)) == -1)
     {
         global_logger_tem << ddfsLogger::LOG_WARNING << "UDP::Server :: Unable to bind socket. "
                         << strerror(errno) <<"\n";
-        close(clientSocketFD);
         close(serverSocketFD);
+        close(clientSocketFD);
         return (ddfsStatus(DDFS_FAILURE));
     }
 

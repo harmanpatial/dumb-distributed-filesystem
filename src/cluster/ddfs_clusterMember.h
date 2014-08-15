@@ -46,7 +46,7 @@ public:
 	virtual T_memberID getMemberID() = 0;
 	
 	virtual void setUniqueIdentification(T_uniqueID) = 0;
-	virtual int getUniqueIdentification() = 0;
+	virtual T_uniqueID getUniqueIdentification() = 0;
 	virtual ddfsStatus sendClusterMetaData(T_ClusterMessage *) = 0;
 public:
 	static const int s_clusterMemberIdInvalid = -1;
@@ -55,7 +55,7 @@ public:
 private:
 	T_clusterID clusterID;
 	T_memberID memberID;
-	int uniqueIdentification;
+	T_uniqueID uniqueIdentification;
 	T_clusterMemberState currentState;
     T_network ddfsNetwork;
 }; // class end

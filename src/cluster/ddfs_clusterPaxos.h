@@ -34,7 +34,7 @@
  *
  */
  
-class ddfsClusterPaxos:protected ddfsCluster<ddfsClusterMemberPaxos *, int> {
+class ddfsClusterPaxos:protected ddfsCluster<ddfsClusterMemberPaxos *, string> {
 private:
 	static const uint8_t s_maxClusterMembers = 4;
     static const uint8_t  s_retryCountLE = 5;
@@ -54,9 +54,9 @@ protected:
 	ddfsStatus leaderElection();
 	uint64_t getProposalNumber();
 	void asyncEventHandling(void *buffer, int bufferCount);
-	ddfsStatus addMember(int uniqueIdentifiction);
+	ddfsStatus addMember(string addHostName);
 	ddfsStatus addMembers();    /* Does nothing at this point */
-	ddfsStatus deleteMember(int uniqueIdentifiction);
+	ddfsStatus deleteMember(string removeHostName);
 	ddfsStatus deleteMembers(); /* Does nothing at this point */
 	
 	/* Methods specific to Paxos algorithm */

@@ -33,7 +33,7 @@ ddfsClusterPaxos::ddfsClusterPaxos() {
 
 	localClusterMember = new ddfsClusterMemberPaxos();
     /* Initialize the local node */
-    localClusterMember->init(true, -1);
+    localClusterMember->init("localhost");
 	return;
 }
 
@@ -119,13 +119,12 @@ void ddfsClusterPaxos::asyncEventHandling(void *buffer, int bufferCount) {
 }
 
 //ddfsStatus ddfsClusterPaxos::addMember(ddfsClusterMemberPaxos *newMember) {
-ddfsStatus ddfsClusterPaxos::addMember(int uniqueIdentifiction) {
+ddfsStatus ddfsClusterPaxos::addMember(string newHostName) {
     
     list<ddfsClusterMemberPaxos *>::iterator clusterMemberIter;
     
     for(clusterMemberIter = clusterMembers.begin(); clusterMemberIter != clusterMembers.end(); clusterMemberIter++) {
-            //if((*clusterMemberIter)->getUniqueIdentification() == newMember->getUniqueIdentification()) {
-            if((*clusterMemberIter)->getUniqueIdentification() == uniqueIdentifiction) {
+            if((*clusterMemberIter)->getHostName().compare(newHostName) == 0) {
                 global_logger_cp << ddfsLogger::LOG_WARNING << "Node "
                                 << (*clusterMemberIter)->getUniqueIdentification()
                                 << " is already configured to be part of cluster";
@@ -139,7 +138,7 @@ ddfsStatus ddfsClusterPaxos::addMember(int uniqueIdentifiction) {
      */
     ddfsClusterMemberPaxos *newMember = new ddfsClusterMemberPaxos();
 
-    newMember->init(false, localClusterMember->getLocalSocket());
+    newMember->init(newHostName);
     clusterMembers.push_back(newMember);
     clusterMemberCount++;
 	return (ddfsStatus(DDFS_OK));
@@ -149,13 +148,13 @@ ddfsStatus ddfsClusterPaxos::addMembers() {
 	return (ddfsStatus(DDFS_FAILURE));
 }
 
-ddfsStatus ddfsClusterPaxos::deleteMember(int uniqueIdentifiction) {
+ddfsStatus ddfsClusterPaxos::deleteMember(string removeHostName) {
     list<ddfsClusterMemberPaxos *>::iterator clusterMemberIter;
     ddfsClusterMemberPaxos *deletedMember = NULL;
     bool exists = false;
     
     for(clusterMemberIter = clusterMembers.begin(); clusterMemberIter != clusterMembers.end(); clusterMemberIter++) {
-            if((*clusterMemberIter)->getUniqueIdentification() == uniqueIdentifiction) {
+            if((*clusterMemberIter)->getHostName().compare(removeHostName) == 0) {
                 exists = true;
                 deletedMember = *clusterMemberIter;
             }
@@ -168,7 +167,10 @@ ddfsStatus ddfsClusterPaxos::deleteMember(int uniqueIdentifiction) {
     }
 
     clusterMembers.remove(deletedMember);
+
+    delete(deletedMember);
     clusterMemberCount--;
+
 	return (ddfsStatus(DDFS_OK));
 }
 
