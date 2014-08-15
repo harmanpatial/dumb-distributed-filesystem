@@ -39,8 +39,7 @@ protected:
 	int clusterID;
 	list<T_ddfsClusterMember> clusterMembers;
 	uint64_t paxosProposalNumber;
-	~ddfsCluster();
-	virtual ddfsStatus leaderElection();
+	virtual ddfsStatus leaderElection() = 0;
     /* !
     *  \brief  asyncEventHandling
     *
@@ -52,14 +51,15 @@ protected:
     *  \note        This is what would handle to cluster data.
     *               All the data is of a specific format.
     */
-    virtual void asyncEventHandling(void *buffer, int bufferCount);
-	virtual ddfsStatus addMember(T_ddfsMemberIdentification);
-	virtual ddfsStatus addMembers();
-	virtual ddfsStatus deleteMember(T_ddfsMemberIdentification);
-	virtual ddfsStatus deleteMembers();
+    virtual void asyncEventHandling(void *buffer, int bufferCount) = 0;
+    virtual ddfsStatus addMember(T_ddfsMemberIdentification) = 0;
+    virtual ddfsStatus addMembers() = 0;
+    virtual ddfsStatus deleteMember(T_ddfsMemberIdentification) = 0;
+    virtual ddfsStatus deleteMembers() = 0;
 public:
 	static const int s_clusterIDInvalid = -1;
-	ddfsCluster();
+	ddfsCluster() {}
+	virtual ~ddfsCluster() {};
 private:
 	ddfsCluster(ddfsCluster const&);     // Don't Implement
 	void operator=(ddfsCluster const&); // Don't implement

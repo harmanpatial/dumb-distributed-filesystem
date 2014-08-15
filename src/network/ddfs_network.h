@@ -48,7 +48,7 @@ enum DDFS_NETWORK_TYPE {
 	DDFS_NETWORK_ISCSI
 };
 
-template <typename T_remoteNodeUniqueID>
+template <typename T_remoteNodeUniqueID, typename T_subscribedClass>
 class Network {
 public:
 	/* @sa openConnection				*/
@@ -130,7 +130,7 @@ public:
 	 * @return   DDFS_OK		Success
 	 * @return   DDFS_FAILURE	Failure
 	 */
-	virtual ddfsStatus subscribe(void (*)(int),  void *privatePtr) = 0;
+	virtual ddfsStatus subscribe(T_subscribedClass *,  void *privatePtr) = 0;
 	/*	closeConnection			*/
 	/**
 	 * @brief   Close the connection.
@@ -165,9 +165,9 @@ public:
 	virtual ddfsStatus copyData(void *des, int requestedSize, int *actualSize) = 0;
 
 	DDFS_NETWORK_TYPE network_type;
-//public:
-//	Network();
-//	~Network();
+public:
+	Network() {}
+	virtual ~Network() {}
 };
 
 #endif /* DDFS_NETWORK_H */

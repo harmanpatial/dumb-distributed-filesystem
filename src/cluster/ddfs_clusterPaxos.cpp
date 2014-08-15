@@ -13,6 +13,7 @@
 #include <string>
 
 #include "ddfs_clusterPaxos.h"
+#include "ddfs_clusterMemberPaxos.h"
 #include "ddfs_clusterMessagesPaxos.h"
 #include "ddfs_clusterPaxosInstance.h"
 #include "../logger/ddfs_fileLogger.h"
@@ -22,7 +23,7 @@
 #include <ifaddrs.h>
 #include <unistd.h>
 
-ddfsLogger &global_logger = ddfsLogger::getInstance();
+ddfsLogger &global_logger_cp = ddfsLogger::getInstance();
  
 ddfsClusterPaxos::ddfsClusterPaxos() {
 	clusterID = s_clusterIDInvalid;
@@ -30,10 +31,15 @@ ddfsClusterPaxos::ddfsClusterPaxos() {
 	paxosProposalNumber = 
 		getLocalNode()->getUniqueIdentification();
 
-	localClusterMember = new ddfsClusterMemberPaxos;
+	localClusterMember = new ddfsClusterMemberPaxos();
     /* Initialize the local node */
     localClusterMember->init(true, -1);
 	return;
+}
+
+ddfsClusterPaxos::~ddfsClusterPaxos() {
+
+
 }
 
 uint64_t ddfsClusterPaxos::getProposalNumber() {
@@ -59,9 +65,9 @@ ddfsStatus ddfsClusterPaxos::leaderElection() {
         *  election.
         */
         if(clusterMemberCount <= 1) {
-            global_logger << ddfsLogger::LOG_INFO
+            global_logger_cp << ddfsLogger::LOG_INFO
                 << "Cannot perform leader election. Add more nodes in the cluster";
-            global_logger << ddfsLogger::LOG_INFO
+            global_logger_cp << ddfsLogger::LOG_INFO
                 << "Number of members in the cluster : "<< clusterMemberCount;
             return (ddfsStatus(DDFS_CLUSTER_INSUFFICIENT_NODES));
         }
@@ -69,7 +75,7 @@ ddfsStatus ddfsClusterPaxos::leaderElection() {
         /* Push all the online members of the cluster to a local list */
         for(clusterMemberIter = clusterMembers.begin(); clusterMemberIter != clusterMembers.end(); clusterMemberIter++) {
             if((*clusterMemberIter)->isOnline().compareStatus(ddfsStatus(DDFS_OK)) == false) {
-                global_logger << ddfsLogger::LOG_WARNING << "Node " << (*clusterMemberIter)->getUniqueIdentification() << " is offline";
+                global_logger_cp << ddfsLogger::LOG_WARNING << "Node " << (*clusterMemberIter)->getUniqueIdentification() << " is offline";
             }
             /* Push this member to the local members list. */
             members.push_back(*clusterMemberIter);
@@ -86,10 +92,10 @@ ddfsStatus ddfsClusterPaxos::leaderElection() {
         status = paxosInstance.start(getProposalNumber(), members);
         if(status.compareStatus(ddfsStatus(DDFS_OK)) == false) {
             retryCount--;
-            global_logger << ddfsLogger::LOG_WARNING << "********* LE : PAXOS INSTANCE FAILED : RETRY COUNT : "
+            global_logger_cp << ddfsLogger::LOG_WARNING << "********* LE : PAXOS INSTANCE FAILED : RETRY COUNT : "
                    << retryCount << " *********";
             if(retryCount == 0) {
-                global_logger << ddfsLogger::LOG_WARNING << "********* LE : FAILED : "
+                global_logger_cp << ddfsLogger::LOG_WARNING << "********* LE : FAILED : "
                    << retryCount << " *********";
             }
                 
@@ -103,7 +109,7 @@ ddfsStatus ddfsClusterPaxos::leaderElection() {
         
     }
 
-    global_logger << ddfsLogger::LOG_WARNING << "LEADER ELECTION SUCCESSFULL.";
+    global_logger_cp << ddfsLogger::LOG_WARNING << "LEADER ELECTION SUCCESSFULL.";
 	return status; 
 }
 
@@ -120,7 +126,7 @@ ddfsStatus ddfsClusterPaxos::addMember(int uniqueIdentifiction) {
     for(clusterMemberIter = clusterMembers.begin(); clusterMemberIter != clusterMembers.end(); clusterMemberIter++) {
             //if((*clusterMemberIter)->getUniqueIdentification() == newMember->getUniqueIdentification()) {
             if((*clusterMemberIter)->getUniqueIdentification() == uniqueIdentifiction) {
-                global_logger << ddfsLogger::LOG_WARNING << "Node "
+                global_logger_cp << ddfsLogger::LOG_WARNING << "Node "
                                 << (*clusterMemberIter)->getUniqueIdentification()
                                 << " is already configured to be part of cluster";
                 return (ddfsStatus(DDFS_CLUSTER_ALREADY_MEMBER));
@@ -155,7 +161,7 @@ ddfsStatus ddfsClusterPaxos::deleteMember(int uniqueIdentifiction) {
             }
     }
     if(exists == false) {
-        global_logger << ddfsLogger::LOG_WARNING << "Node "
+        global_logger_cp << ddfsLogger::LOG_WARNING << "Node "
                     << (*clusterMemberIter)->getUniqueIdentification()
                     << " is not configured to be part of cluster.";
         return (ddfsStatus(DDFS_GENERAL_PARAM_INVALID));

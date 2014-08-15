@@ -38,6 +38,10 @@ ddfsClusterMessagePaxos::ddfsClusterMessagePaxos() {
 	message = (char *)malloc(SIZE_OF_HEADER + MAX_SIZE_OF_MESSAGES);
 }
 
+ddfsClusterMessagePaxos::~ddfsClusterMessagePaxos() {
+    free(message);
+}
+
 ddfsStatus ddfsClusterMessagePaxos::addMessage(uint16_t type, uint64_t uuid) {
 	ddfsMessage.messageType = htonl(type);
     ddfsMessage.Reserved1 = htonl(0);

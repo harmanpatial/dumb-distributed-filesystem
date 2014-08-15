@@ -33,24 +33,25 @@
 template <typename T_clusterMemberState, typename T_clusterID, typename T_ClusterMessage, typename T_memberID, typename T_uniqueID, typename T_network>
 class ddfsClusterMember {
 public:
-	virtual ddfsStatus isOnline();
-	virtual ddfsStatus isDead();
+	virtual ddfsStatus isOnline() = 0;
+	virtual ddfsStatus isDead() = 0;
 	
-	virtual T_clusterMemberState getCurrentState();
-	virtual ddfsStatus setCurrentState(T_clusterMemberState);
+	virtual T_clusterMemberState getCurrentState() = 0;
+	virtual ddfsStatus setCurrentState(T_clusterMemberState) = 0;
 	
-	virtual T_clusterID getClusterID();
-	virtual ddfsStatus setClusterID(T_clusterID);
+	virtual T_clusterID getClusterID() = 0;
+	virtual ddfsStatus setClusterID(T_clusterID) = 0;
 	
-	virtual void setMemberID(T_memberID);
-	virtual T_memberID getMemberID();
+	virtual void setMemberID(T_memberID) = 0;
+	virtual T_memberID getMemberID() = 0;
 	
-	virtual void setUniqueIdentification(T_uniqueID);
-	virtual int getUniqueIdentification();
-	virtual ddfsStatus sendClusterMetaData(T_ClusterMessage *);
+	virtual void setUniqueIdentification(T_uniqueID) = 0;
+	virtual int getUniqueIdentification() = 0;
+	virtual ddfsStatus sendClusterMetaData(T_ClusterMessage *) = 0;
 public:
 	static const int s_clusterMemberIdInvalid = -1;
-	ddfsClusterMember();
+	ddfsClusterMember() {}
+    virtual ~ddfsClusterMember() {}
 private:
 	T_clusterID clusterID;
 	T_memberID memberID;

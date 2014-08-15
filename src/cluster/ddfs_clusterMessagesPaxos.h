@@ -110,11 +110,13 @@ typedef struct {
  *        Data is send directly from the DDFS client
  *        to individual nodes of the cluster.
  */
+#if 0
 typedef struct {
     uint16_t dataOffset;
     uint16_t Reserved1;
     uint64_t uniqueID;
 } __attribute__((packed)) ddfsClusterData;
+#endif
 
 typedef struct {
     uint8_t typeOfService;
@@ -142,8 +144,10 @@ class ddfsClusterMessagePaxos {
 private:
     ddfsClusterHeader ddfsHeader;
     ddfsClusterMessage ddfsMessage;
+#if 0
     ddfsClusterData ddfsData;
-	void* message;
+#endif
+    void* message;
 public:
 	ddfsClusterMessagePaxos();
 	~ddfsClusterMessagePaxos();

@@ -1,5 +1,5 @@
 /*
- * @file ddfs_clusterMemberPaxos.h 
+ * /file ddfs_clusterMemberPaxos.h 
  *
  * @brief Module containing the cluster class.
  *
@@ -14,6 +14,7 @@
 #include <fstream>
 #include <string>
 #include <mutex>
+#include <condition_variable>
 #include <thread>
 
 #include "ddfs_clusterMember.h"
@@ -44,7 +45,7 @@ enum clusterMemberState {
  * T_memberID = int
  * T_uniqueID = int
  */
-class ddfsClusterMemberPaxos : public ddfsClusterMember<clusterMemberState, int, ddfsClusterMessagePaxos, int, int, ddfsUdpConnection> {
+class ddfsClusterMemberPaxos : public ddfsClusterMember<clusterMemberState, int, ddfsClusterMessagePaxos, int, int, ddfsUdpConnection<ddfsClusterMemberPaxos> > {
 public:
 	ddfsClusterMemberPaxos();
 	~ddfsClusterMemberPaxos();
@@ -53,12 +54,19 @@ public:
 	ddfsStatus isDead();
 	clusterMemberState getCurrentState();
 	ddfsStatus setCurrentState(clusterMemberState);
+
+	int getClusterID();
+	ddfsStatus setClusterID(int);
+
 	void setMemberID(int);
 	int getMemberID();
+
 	void setUniqueIdentification(int);
 	int getUniqueIdentification();
     int getLocalSocket();
 	ddfsStatus sendClusterMetaData(ddfsClusterMessagePaxos *);
+    void processingResponses();
+    void callback(int numberOfEntries);
 private:
 	/* Identifies the cluster, of which this member is part of */
 	int clusterID;
@@ -69,19 +77,23 @@ private:
 	int uniqueIdentification;
 	/* Current state of the cluster member */
 	clusterMemberState memberState;
-	/* Current state of the cluster member */
-	ddfsUdpConnection network;
+	/* The network class */
+	ddfsUdpConnection <ddfsClusterMemberPaxos> *network;
 	/* Mutex lock for this object */
 	std::mutex clusterMemberLock;
 
     /* Request and Response queues shared with network layer */
-    std::queue <requestQEntry *> requestQueue;
-    std::queue <responseQEntry *> responseQueue;
+    std::queue <requestQEntry *> reqQueue;
+    std::queue <responseQEntry *> rspQueue;
     void *networkPrivatePtr;
-    void registerHandler(int);
 
-    std::thread workingThread(int processingDdfsResponses);
-    void processingDdfsResponses();
+    std::vector<std::thread> workingThreadQ;
+    //std::thread workingThread(ddfsClusterMemberPaxos::processingResponses, this);
+
+    ddfsStatus processMessage(ddfsClusterMessage *);
+
+    std::condition_variable needToProcess;
+    std::mutex responseQLock;
 
     /* HostName of this cluster member */
     string hostName;

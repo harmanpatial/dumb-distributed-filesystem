@@ -1,7 +1,7 @@
 #Simple makefile to build the shared library.
 
 CC=g++
-CFLAGS= -fPIC -pedantic
+CFLAGS= -std=c++11 -dynamiclib -pedantic
 LDFLAGS= -shared -Wl
 
 MAKE = /usr/bin/make
@@ -9,14 +9,18 @@ RM = /bin/rm
 CP = /bin/cp
 ECHO = /bin/echo
 PWD = /bin/pwd
+INCLUDE = -I./logger/ -I./global/ -I./network/ -I./cluster/
 
 SRC_DIR1	= logger
-SRC_DIR2	= network
-SRC_DIR3	= cluster
-SRC_DIR4	= global
-TARGET		= libddfs.so
+SRC_DIR2	= global
+SRC_DIR3	= network
+SRC_DIR4	= cluster
+TARGET		= libddfs.so.1
 OBJS		= ./global/ddfs_status.o ./logger/ddfs_fileLogger.o \
-			./network/ddfs_udpConnection.o ./cluster/ddfs_cluster.o \
+			 ./cluster/ddfs_clusterMessagesPaxos.o \
+			./cluster/ddfs_clusterMemberPaxos.o \
+			./cluster/ddfs_clusterPaxos.o \
+			./cluster/ddfs_clusterPaxosInstance.o \
 			./global/ddfs_global.o 
 OBJLIBS		= 
 LIBS		= -L.
@@ -36,7 +40,7 @@ lib : $(TARGET)
 
 $(TARGET) :
 	@echo "*** DDFS Building Dynamic Library *****"
-	$(CC) $(LDFLAGS) $(CFLAGS) -o $(TARGET) $(OBJS)
+	$(CC) $(LDFLAGS) $(CFLAGS) $(INCLUDE) -o $(TARGET) $(OBJS)
 	$(CP) $(TARGET) ../
 	@echo "*** DDFS Build Process Complete *****"
 

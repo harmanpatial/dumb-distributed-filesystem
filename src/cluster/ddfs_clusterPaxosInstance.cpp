@@ -17,12 +17,13 @@
 #include "ddfs_clusterPaxosInstance.h"
 #include <unistd.h>
 
-ddfsLogger &global_logger = ddfsLogger::getInstance();
+ddfsLogger &global_logger_cpi = ddfsLogger::getInstance();
 
 ddfsClusterPaxosInstance::ddfsClusterPaxosInstance () {
 	uniqueID = -1;
 }
 
+ddfsClusterPaxosInstance::~ddfsClusterPaxosInstance () {}
 
 ddfsStatus ddfsClusterPaxosInstance::start (uint64_t uniqueID, list <ddfsClusterMemberPaxos *>& participatingMembers)
 {
@@ -43,7 +44,7 @@ ddfsStatus ddfsClusterPaxosInstance::start (uint64_t uniqueID, list <ddfsCluster
 		/*  Send Prepare cluster message to all the nodes in the cluster. Promise cluster message should arrive */
 		for(clusterMemberIter = participatingMembers.begin(); clusterMemberIter != participatingMembers.end(); clusterMemberIter++) {
 			if( (*clusterMemberIter)->isOnline().compareStatus(ddfsStatus(DDFS_OK)) == 0) {
-				global_logger << ddfsLogger::LOG_WARNING << "Node " << (*clusterMemberIter)->getUniqueIdentification() << " is offline";
+				global_logger_cpi << ddfsLogger::LOG_WARNING << "Node " << (*clusterMemberIter)->getUniqueIdentification() << " is offline";
 			}
 			/* Create packet for the Prepare request and send it to the choosen node */
 			message.addMessage(CLUSTER_MESSAGE_LE_TYPE_PREPARE, uniqueID);
