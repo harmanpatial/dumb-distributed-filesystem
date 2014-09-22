@@ -78,7 +78,7 @@ private:
 	int memberID;
 	/* uniqueIdentifier for using it as Number in Paxos algorithm */
 	/* This is mac address shifted left by 12 bits */
-	int uniqueIdentification;
+	uint64_t uniqueIdentification;
 	/* Current state of the cluster member */
 	clusterMemberState memberState;
 	/* The network class */
@@ -101,6 +101,14 @@ private:
 
     /* HostName of this cluster member */
     string hostName;
+
+    bool isLocalNode() {
+        if(hostName.compare("localhost") == 0)
+            return true;
+
+        return false;
+    }
+
 	ddfsClusterMemberPaxos(const ddfsClusterMemberPaxos &other);  /* copy constructor */
 }; // class end
 

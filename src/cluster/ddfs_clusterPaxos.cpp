@@ -43,7 +43,7 @@ ddfsClusterPaxos::~ddfsClusterPaxos() {
 }
 
 uint64_t ddfsClusterPaxos::getProposalNumber() {
-	paxosProposalNumber++;
+    paxosProposalNumber++;
     if(paxosProposalNumber == std::numeric_limits<uint64_t>::max()) {
         paxosProposalNumber = 1;
     }

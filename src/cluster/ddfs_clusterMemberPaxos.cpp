@@ -133,11 +133,13 @@ int ddfsClusterMemberPaxos::getMemberID() {
 
 void ddfsClusterMemberPaxos::setUniqueIdentification(int newIdentifier) {
 	clusterMemberLock.lock();
-	uniqueIdentification =  newIdentifier;
+	uniqueIdentification = newIdentifier;
 	clusterMemberLock.unlock();
 }
 
 int ddfsClusterMemberPaxos::getUniqueIdentification() {
+    if(isLocalNode() == false)
+        return 0;
 	return uniqueIdentification;
 }
 
