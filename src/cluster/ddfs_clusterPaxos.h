@@ -36,9 +36,13 @@
  
 class ddfsClusterPaxos:protected ddfsCluster<ddfsClusterMemberPaxos *, string> {
 private:
+    /* Maximum Cluster Members */
 	static const uint8_t s_maxClusterMembers = 4;
+
+    /* Maximum Retries for a Leader Election */
     static const uint8_t  s_retryCountLE = 5;
 	ddfsClusterMemberPaxos* localClusterMember;
+    /* Current cluster Member Count */
 	int clusterMemberCount;
 protected:
 	ddfsStatus init();

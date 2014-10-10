@@ -25,7 +25,7 @@ ddfsClusterPaxosInstance::ddfsClusterPaxosInstance () {
 
 ddfsClusterPaxosInstance::~ddfsClusterPaxosInstance () {}
 
-ddfsStatus ddfsClusterPaxosInstance::start (uint64_t uniqueID, list <ddfsClusterMemberPaxos *>& participatingMembers)
+ddfsStatus ddfsClusterPaxosInstance::execute (uint64_t uniqueID, list <ddfsClusterMemberPaxos *>& participatingMembers)
 {
 	list<ddfsClusterMemberPaxos *>::iterator clusterMemberIter;
 	ddfsClusterMessagePaxos message = ddfsClusterMessagePaxos();
@@ -33,7 +33,7 @@ ddfsStatus ddfsClusterPaxosInstance::start (uint64_t uniqueID, list <ddfsCluster
 	int currentCount = 0;
 	
 	/* Start the leader Election */
-	/* Alogirithm is straight formward.
+	/* Algorithm is straight formward.
 	 * 
 	 * Phase 1a: Prepare
 	 * Phase 1b: Promise
@@ -41,7 +41,9 @@ ddfsStatus ddfsClusterPaxosInstance::start (uint64_t uniqueID, list <ddfsCluster
 	 * Phase 2b: Accepted
 	 */
 	while (1) {
-		/*  Send Prepare cluster message to all the nodes in the cluster. Promise cluster message should arrive */
+		/*  Send a Prepare cluster message to be send to all the nodes in the cluster.
+         *  Promise cluster message should arrive for all the cluster members or atleast majority of cluster members.
+         */
 		for(clusterMemberIter = participatingMembers.begin(); clusterMemberIter != participatingMembers.end(); clusterMemberIter++) {
 			if( (*clusterMemberIter)->isOnline().compareStatus(ddfsStatus(DDFS_OK)) == 0) {
 				global_logger_cpi << ddfsLogger::LOG_WARNING << "Node " << (*clusterMemberIter)->getUniqueIdentification() << " is offline";
@@ -52,8 +54,8 @@ ddfsStatus ddfsClusterPaxosInstance::start (uint64_t uniqueID, list <ddfsCluster
 			(*clusterMemberIter)->setCurrentState(s_clusterMemberPaxos_LE_PREPARE);
 		}
 
-		/*  Wait for 5 seconds for the Promise response from Quorum */
-		sleep(5);
+		/*  Wait for the Promise response from Quorum */
+		sleep(s_timeout);
 	
 		/*  Check the status of this instance of paxos algorithm */
 		for(clusterMemberIter = participatingMembers.begin(); clusterMemberIter != participatingMembers.end(); clusterMemberIter++) {
@@ -74,8 +76,8 @@ ddfsStatus ddfsClusterPaxosInstance::start (uint64_t uniqueID, list <ddfsCluster
 			}
 		}
 		
-		/*  Wait for 5 seconds for the Accept response from Quorum */
-		sleep(5);
+		/*  Wait for the Accept response from Quorum */
+		sleep(s_timeout);
 
 		currentCount = 0;
 
@@ -94,11 +96,11 @@ ddfsStatus ddfsClusterPaxosInstance::start (uint64_t uniqueID, list <ddfsCluster
 	} /* End of while */
 
 	return (ddfsStatus(DDFS_FAILURE));
-}		/* -----  end of method ddfsClusterPaxosInstance::start  ----- */
+}		/* -----  end of method ddfsClusterPaxosInstance::execute  ----- */
 
-ddfsStatus startAsync(uint64_t uniqueID, list <ddfsClusterMemberPaxos *>& participatingMembers, ddfsClusterPaxos& cluster) {
+ddfsStatus executeAsync(uint64_t uniqueID, list <ddfsClusterMemberPaxos *>& participatingMembers, ddfsClusterPaxos& cluster) {
 	return (ddfsStatus(DDFS_FAILURE));
-}		/* -----  end of method ddfsClusterPaxosInstance::startAsync  ----- */
+}		/* -----  end of method ddfsClusterPaxosInstance::executeAsync  ----- */
 
 void ddfsClusterPaxosInstance::abandon()
 {

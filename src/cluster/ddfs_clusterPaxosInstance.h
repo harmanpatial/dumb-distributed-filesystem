@@ -47,8 +47,8 @@ class ddfsClusterPaxosInstance
 		~ddfsClusterPaxosInstance ();                            /* destructor */    
 
 		/* ====================  ACCESSORS     ======================================= */
-		ddfsStatus start(uint64_t uniqueID, list <ddfsClusterMemberPaxos *>& participatingMembers);
-		ddfsStatus startAsync(uint64_t uniqueID, list <ddfsClusterMemberPaxos *>& participatingMembers, ddfsClusterPaxos& cluster);
+		ddfsStatus execute(uint64_t uniqueID, list <ddfsClusterMemberPaxos *>& participatingMembers);
+		ddfsStatus executeAsync(uint64_t uniqueID, list <ddfsClusterMemberPaxos *>& participatingMembers, ddfsClusterPaxos& cluster);
 		/* ====================  MUTATORS      ======================================= */
 		void abandon();
 		/* ====================  OPERATORS     ======================================= */
@@ -63,6 +63,7 @@ class ddfsClusterPaxosInstance
 	private:
 		/* ====================  METHODS       ======================================= */
 		ddfsClusterPaxosInstance (const ddfsClusterPaxosInstance &other);   /* copy constructor */
+        const static int s_timeout = 2;
 
 		/* ====================  DATA MEMBERS  ======================================= */
 		int uniqueID;

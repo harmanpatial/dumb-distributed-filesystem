@@ -61,8 +61,8 @@ ddfsStatus ddfsClusterPaxos::leaderElection() {
 
         /* Remove all the elements from the list */
         members.clear();
-        /*  If there is no other node in the cluster, no need to start leader
-        *  election.
+        /*  If there is no other node in the cluster, no need to execute leader
+        *  election paxos instance.
         */
         if(clusterMemberCount <= 1) {
             global_logger_cp << ddfsLogger::LOG_INFO
@@ -88,8 +88,8 @@ ddfsStatus ddfsClusterPaxos::leaderElection() {
          */
         ddfsClusterPaxosInstance paxosInstance; 
 
-        /* Start the Paxos Instance */
-        status = paxosInstance.start(getProposalNumber(), members);
+        /* Execute the Paxos Instance */
+        status = paxosInstance.execute(getProposalNumber(), members);
         if(status.compareStatus(ddfsStatus(DDFS_OK)) == false) {
             retryCount--;
             global_logger_cp << ddfsLogger::LOG_WARNING << "********* LE : PAXOS INSTANCE FAILED : RETRY COUNT : "
