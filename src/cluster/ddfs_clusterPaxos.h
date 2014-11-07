@@ -30,7 +30,7 @@
  * 	 A singleton class.
  *
  * @note This is primarily exposed to Administrator.
- * addMember*, deleteMember* interface is exposed to the Admin can add or delete members for the cluster.
+ * addMember*, removeMember* interface is exposed to the Admin can add or remove members for the cluster.
  *
  */
  
@@ -60,8 +60,8 @@ protected:
 	void asyncEventHandling(void *buffer, int bufferCount);
 	ddfsStatus addMember(string addHostName);
 	ddfsStatus addMembers();    /* Does nothing at this point */
-	ddfsStatus deleteMember(string removeHostName);
-	ddfsStatus deleteMembers(); /* Does nothing at this point */
+	ddfsStatus removeMember(string removeHostName);
+	ddfsStatus removeMembers(); /* Does nothing at this point */
 	
 	/* Methods specific to Paxos algorithm */
 	ddfsClusterMemberPaxos* getLocalNode();

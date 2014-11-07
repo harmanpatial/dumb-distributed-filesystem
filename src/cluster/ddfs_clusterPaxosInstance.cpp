@@ -42,8 +42,8 @@ ddfsStatus ddfsClusterPaxosInstance::execute (uint64_t uniqueID, list <ddfsClust
 	 */
 	while (1) {
 		/*  Send a Prepare cluster message to be send to all the nodes in the cluster.
-         *  Promise cluster message should arrive for all the cluster members or atleast majority of cluster members.
-         */
+		 *  Promise cluster message should arrive for all the cluster members or atleast majority of cluster members.
+		 */
 		for(clusterMemberIter = participatingMembers.begin(); clusterMemberIter != participatingMembers.end(); clusterMemberIter++) {
 			if( (*clusterMemberIter)->isOnline().compareStatus(ddfsStatus(DDFS_OK)) == 0) {
 				global_logger_cpi << ddfsLogger::LOG_WARNING << "Node " << (*clusterMemberIter)->getUniqueIdentification() << " is offline";

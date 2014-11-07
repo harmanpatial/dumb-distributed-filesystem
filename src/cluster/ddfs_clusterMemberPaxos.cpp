@@ -17,10 +17,10 @@
 ddfsLogger &global_logger_cmp = ddfsLogger::getInstance();
 
 ddfsClusterMemberPaxos::ddfsClusterMemberPaxos() {
-	clusterID = -1;
-	memberID = -1;
-	uniqueIdentification = -1;
-	memberState = s_clusterMemberUnknown;
+    clusterID = -1;
+    memberID = -1;
+    uniqueIdentification = -1;
+    memberState = s_clusterMemberUnknown;
     networkPrivatePtr = NULL;
 
     network = new ddfsUdpConnection<ddfsClusterMemberPaxos>();

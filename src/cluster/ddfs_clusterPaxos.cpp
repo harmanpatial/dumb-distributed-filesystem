@@ -128,7 +128,7 @@ ddfsStatus ddfsClusterPaxos::addMember(string newHostName) {
                 global_logger_cp << ddfsLogger::LOG_WARNING << "Node "
                                 << (*clusterMemberIter)->getUniqueIdentification()
                                 << " is already configured to be part of cluster";
-                return (ddfsStatus(DDFS_CLUSTER_ALREADY_MEMBER));
+                return (ddfsStatus(DDFS_CLUSTER_ALREADY_MEMBER)); 
             }
     }
 
@@ -148,7 +148,7 @@ ddfsStatus ddfsClusterPaxos::addMembers() {
 	return (ddfsStatus(DDFS_FAILURE));
 }
 
-ddfsStatus ddfsClusterPaxos::deleteMember(string removeHostName) {
+ddfsStatus ddfsClusterPaxos::removeMember(string removeHostName) {
     list<ddfsClusterMemberPaxos *>::iterator clusterMemberIter;
     ddfsClusterMemberPaxos *deletedMember = NULL;
     bool exists = false;
@@ -174,7 +174,7 @@ ddfsStatus ddfsClusterPaxos::deleteMember(string removeHostName) {
 	return (ddfsStatus(DDFS_OK));
 }
 
-ddfsStatus ddfsClusterPaxos::deleteMembers() {
+ddfsStatus ddfsClusterPaxos::removeMembers() {
 	return (ddfsStatus(DDFS_FAILURE));
 }
 
