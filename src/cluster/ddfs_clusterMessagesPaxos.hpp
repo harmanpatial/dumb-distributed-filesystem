@@ -15,7 +15,7 @@
 #include <string>
 #include <list>
 
-#include "../global/ddfs_status.h"
+#include "../global/ddfs_status.hpp"
 
 /**
  * @class ddfsClusterMessagesPaxos
@@ -118,10 +118,12 @@ typedef struct {
 } __attribute__((packed)) ddfsClusterData;
 #endif
 
+#define MAX_REQUEST_SIZE	256
+
 typedef struct {
     uint8_t typeOfService;
     uint16_t totalLength;
-    void *data;
+    uint8_t data[MAX_REQUEST_SIZE];
     /* Following entries in used only for internal data manipulation */
     uint64_t uniqueID;
     void *privateData;
@@ -130,12 +132,12 @@ typedef struct {
 typedef struct {
     uint8_t typeOfService;
     uint16_t totalLength;
-    void *data;
+    uint8_t data[256];
 } responseQEntry; 
 
 /*!
  *  \class  ddfsClusterMessagePaxos
- *  \brief  This is the class for forming the cluster message.
+ *  \brief  This is the class for creating cluster message.
  *  
  *   These messages are essential for correct working of
  *   the cluster.

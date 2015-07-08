@@ -1,9 +1,9 @@
 /*
  * /file ddfs_clusterMemberPaxos.h 
  *
- * @brief Module containing the cluster class.
+ * @brief Module containing the cluster member class.
  *
- * This is the module that contains cluster class.
+ * This is the module that contains cluster member class.
  *
  * @author Harman Patial <harman.patial@gmail.com>
  *
@@ -17,11 +17,11 @@
 #include <condition_variable>
 #include <thread>
 
-#include "ddfs_clusterMember.h"
-#include "ddfs_clusterMessagesPaxos.h"
-#include "../network/ddfs_udpConnection.h"
-#include "../global/ddfs_status.h"
-#include "../logger/ddfs_fileLogger.h"
+#include "ddfs_clusterMember.hpp"
+#include "ddfs_clusterMessagesPaxos.hpp"
+#include "../network/ddfs_udpConnection.hpp"
+#include "../global/ddfs_status.hpp"
+#include "../logger/ddfs_fileLogger.hpp"
 
 enum clusterMemberState {
 	s_clusterMemberOnline	= 0, /* cluster member is online. */
@@ -50,7 +50,7 @@ public:
 	ddfsClusterMemberPaxos();
 	~ddfsClusterMemberPaxos();
 	ddfsStatus init(string hostn);
-	ddfsStatus isOnline();
+	bool isOnline();
 	ddfsStatus isDead();
 	clusterMemberState getCurrentState();
 	ddfsStatus setCurrentState(clusterMemberState);
@@ -70,7 +70,7 @@ public:
 #endif
 	ddfsStatus sendClusterMetaData(ddfsClusterMessagePaxos *);
     void processingResponses();
-    void callback(int numberOfEntries);
+    void callback(void *data, int size);
 private:
 	/* Identifies the cluster, of which this member is part of */
 	int clusterID;
@@ -87,8 +87,8 @@ private:
 	std::mutex clusterMemberLock;
 
     /* Request and Response queues shared with network layer */
-    std::queue <requestQEntry *> reqQueue;
-    std::queue <responseQEntry *> rspQueue;
+    //std::queue <requestQEntry *> reqQueue;
+    //std::queue <responseQEntry *> rspQueue;
     void *networkPrivatePtr;
 
     std::vector<std::thread> workingThreadQ;

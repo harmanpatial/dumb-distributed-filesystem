@@ -14,10 +14,13 @@
 
 #include <fstream>
 #include <string>
+#include <vector>
 
-#include "ddfs_cluster.h"
-#include "ddfs_clusterMemberPaxos.h"
-#include "../global/ddfs_status.h"
+#include "ddfs_cluster.hpp"
+#include "ddfs_clusterMemberPaxos.hpp"
+#include "../global/ddfs_status.hpp"
+
+using namespace std;
 
 /**
  * @class ddfsClusterPaxos
@@ -37,16 +40,16 @@
 class ddfsClusterPaxos:protected ddfsCluster<ddfsClusterMemberPaxos *, string> {
 private:
     /* Maximum Cluster Members */
-	static const uint8_t s_maxClusterMembers = 4;
+	static const unsigned int s_maxClusterMembers = 5;
 
     /* Maximum Retries for a Leader Election */
-    static const uint8_t  s_retryCountLE = 5;
+    static const unsigned int s_retryCountLE = 5;
 	ddfsClusterMemberPaxos* localClusterMember;
     /* Current cluster Member Count */
 	int clusterMemberCount;
 protected:
 	ddfsStatus init();
-	list<ddfsClusterMemberPaxos *> clusterMembers;
+	vector<ddfsClusterMemberPaxos *> clusterMembers;
 	/*
 	 * Function that would contain the logic to perform leader election.
 	 *

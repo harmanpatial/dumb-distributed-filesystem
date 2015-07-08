@@ -10,9 +10,8 @@
 
 #include <string>
 
-#include "ddfs_global.h"
-
-#include "./../cluster/ddfs_clusterPaxos.h"
+#include "ddfs_global.hpp"
+#include "./../cluster/ddfs_clusterPaxos.hpp"
 
 ddfsLogger& ddfsGlobal::global_logger = ddfsLogger::getInstance();
 int ddfsGlobal::initialization_done = 0;
@@ -32,6 +31,8 @@ ddfsStatus ddfsGlobal::initialize() {
 
 	global_logger = ddfsLogger::getInstance();
 
+	// ddfsLogger::
+
 	// Writing warnings or errors to file is very easy and C++ style
 	global_logger << ddfsLogger::LOG_WARNING << "DDFS(" << major_version << "."
 				<< minor_version  << "." << patch_version
@@ -47,19 +48,6 @@ ddfsStatus ddfsGlobal::initialize() {
 //	ddfsCluster cluster = new ddfsCluster();
 
 /* The below commented out code would be in the cluster module */
-
-
-/************************* 
-	UdpConnection *clientConnection = new UdpConnection();
-	UdpConnection *serverConnection = new UdpConnection();
-	serverConnection->openConnection(false);
-	clientConnection->openConnection(true);
-
-
-	serverConnection->closeConnection();
-	clientConnection->closeConnection();
-***************************/
-
 //	cluster.init();
 
 	/* Init done */

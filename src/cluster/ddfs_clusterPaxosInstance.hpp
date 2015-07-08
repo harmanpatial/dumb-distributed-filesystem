@@ -3,9 +3,9 @@
  *   \brief  Class that describes one instance of Paxos algorithm.
  *  
  *  This class describes one instance of Paxos algorithm.
- *  This is for Paxos instance that this node is "Leader" of.
- *  Any paxos instance in which a local node participate, but is not a 
- *  "Leader", should/will not be managed by local node.
+ *  This is for Paxos instance that local node is "Leader" of.
+ *  Any paxos instance in which local node participate, but is not a 
+ *  "Leader", will not be managed by local node.
  *  
  *  \author  Harman Patial, harman.patial@gmail.com
  *  
@@ -21,13 +21,12 @@
 #define DDFS_CLUSTER_PAXOS_INSTANCE_H
 
 
-#include "ddfs_clusterPaxos.h"
-#include "ddfs_clusterMemberPaxos.h"
-#include "ddfs_clusterMessagesPaxos.h"
+#include "ddfs_clusterPaxos.hpp"
+#include "ddfs_clusterMemberPaxos.hpp"
+#include "ddfs_clusterMessagesPaxos.hpp"
 
-#include "../global/ddfs_status.h"
-#include "../logger/ddfs_fileLogger.h"
-#define	s_paxosInstanceInvalid	-1
+#include "../global/ddfs_status.hpp"
+#include "../logger/ddfs_fileLogger.hpp"
 
 /*!
  *  \class  ddfs_clusterPaxosInstance
@@ -47,8 +46,8 @@ class ddfsClusterPaxosInstance
 		~ddfsClusterPaxosInstance ();                            /* destructor */    
 
 		/* ====================  ACCESSORS     ======================================= */
-		ddfsStatus execute(uint64_t uniqueID, list <ddfsClusterMemberPaxos *>& participatingMembers);
-		ddfsStatus executeAsync(uint64_t uniqueID, list <ddfsClusterMemberPaxos *>& participatingMembers, ddfsClusterPaxos& cluster);
+		ddfsStatus execute(uint64_t uniqueID, vector <ddfsClusterMemberPaxos *>& participatingMembers);
+		ddfsStatus executeAsync(uint64_t uniqueID, vector <ddfsClusterMemberPaxos *>& participatingMembers, ddfsClusterPaxos& cluster);
 		/* ====================  MUTATORS      ======================================= */
 		void abandon();
 		/* ====================  OPERATORS     ======================================= */
@@ -63,7 +62,9 @@ class ddfsClusterPaxosInstance
 	private:
 		/* ====================  METHODS       ======================================= */
 		ddfsClusterPaxosInstance (const ddfsClusterPaxosInstance &other);   /* copy constructor */
-        const static int s_timeout = 2;
+        static const int s_timeout = 2;
+		static const int s_paxosInstanceInvalid = -1;
+		static const unsigned int s_quorum = 2; // This is a factor value. 2 means totalParticipatingMembers/2. So, half of the participating members.
 
 		/* ====================  DATA MEMBERS  ======================================= */
 		int uniqueID;

@@ -14,7 +14,7 @@
 #include <fstream>
 #include <string>
 
-#include "../global/ddfs_status.h"
+#include "../global/ddfs_status.hpp"
 
 /**
  * @class ddfsClusterMember
@@ -33,7 +33,7 @@
 template <typename T_clusterMemberState, typename T_clusterID, typename T_ClusterMessage, typename T_memberID, typename T_uniqueID, typename T_network>
 class ddfsClusterMember {
 public:
-	virtual ddfsStatus isOnline() = 0;
+	virtual bool isOnline() = 0;
 	virtual ddfsStatus isDead() = 0;
 	
 	virtual T_clusterMemberState getCurrentState() = 0;

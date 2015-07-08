@@ -1,4 +1,4 @@
-#Simple makefile to build the shared library.
+#Makefile to build DDFS shared library.
 
 CC=g++
 CFLAGS= -std=c++11 -dynamiclib -pedantic

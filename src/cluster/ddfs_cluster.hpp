@@ -17,8 +17,8 @@
 
 using std::list;
 
-#include "ddfs_clusterMember.h"
-#include "../global/ddfs_status.h"
+#include "ddfs_clusterMember.hpp"
+#include "../global/ddfs_status.hpp"
 
 /**
  * \class ddfsCluster
@@ -33,7 +33,7 @@ using std::list;
  * \note 
  *	 
  */
-template <typename T_ddfsClusterMember, typename T_ddfsMemberIdentification>
+template <typename T_ddfsClusterMember, typename T_ddfsMemberIdentification = int>
 class ddfsCluster {
 protected:
 	int clusterID;

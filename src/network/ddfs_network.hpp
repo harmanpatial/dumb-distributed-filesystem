@@ -4,7 +4,7 @@
  * Module for managing communication between nodes.
  *
  * This is the module that would be responsible for communication 
- * beween the cluster nodes.
+ * between the cluster nodes.
  * Most network protocol work on client/server model. In this case,
  * this module would manage both the connection.
  *
@@ -39,16 +39,10 @@
 
 #ifndef DDFS_NETWORK_H
 #define DDFS_NETWORK_H
-#include "../global/ddfs_status.h"
+#include "../global/ddfs_status.hpp"
 
-enum DDFS_NETWORK_TYPE {
-	DDFS_NETWORK_TCP,
-	DDFS_NETWORK_UDP,
-	DDFS_NETWORK_FC,
-	DDFS_NETWORK_ISCSI
-};
 
-template <typename T_remoteNodeUniqueID, typename T_subscribedClass>
+template <typename T_ddfsRemoteNodeUniqueID, typename T_ddfsSubscribedClass, typename T_ddfsNetworkType>
 class Network {
 public:
 	/* @sa openConnection				*/
@@ -65,7 +59,7 @@ public:
 	 * @return DDFS_OK	Success
 	 * @return DDFS_FAILURE	Failure
 	 */
-	virtual ddfsStatus openConnection(T_remoteNodeUniqueID nodeUniqueID) = 0;
+	virtual ddfsStatus openConnection(T_ddfsRemoteNodeUniqueID nodeUniqueID) = 0;
 	/*	sendData			*/
 	/**
 	 * @brief   Send data across.
@@ -130,7 +124,7 @@ public:
 	 * @return   DDFS_OK		Success
 	 * @return   DDFS_FAILURE	Failure
 	 */
-	virtual ddfsStatus subscribe(T_subscribedClass *,  void *privatePtr) = 0;
+	virtual ddfsStatus subscribe(T_ddfsSubscribedClass *,  void *privatePtr) = 0;
 	/*	closeConnection			*/
 	/**
 	 * @brief   Close the connection.
@@ -163,11 +157,23 @@ public:
 	 * @return   DDFS_FAILURE		Failure
 	 */
 	virtual ddfsStatus copyData(void *des, int requestedSize, int *actualSize) = 0;
-
+#if 0
 	DDFS_NETWORK_TYPE network_type;
+#endif
+
+	T_ddfsNetworkType getNetworkType() {
+		return network_type;
+	}
+	
+	void setNetworkType(T_ddfsNetworkType newNetworkType) {
+		network_type = newNetworkType;
+	}
+
 public:
 	Network() {}
 	virtual ~Network() {}
+private:
+	T_ddfsNetworkType network_type;
 };
 
 #endif /* DDFS_NETWORK_H */

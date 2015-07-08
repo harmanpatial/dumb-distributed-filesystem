@@ -12,8 +12,8 @@
 #include <string>
 #include <arpa/inet.h>
 
-#include "ddfs_clusterMessagesPaxos.h"
-#include "../global/ddfs_status.h"
+#include "ddfs_clusterMessagesPaxos.hpp"
+#include "../global/ddfs_status.hpp"
 
 /**
  * @class ddfsClusterMessageMessages

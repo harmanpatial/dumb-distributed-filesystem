@@ -14,7 +14,7 @@
 #include <fstream>
 #include <time.h>
 
-#include "ddfs_fileLogger.h"
+#include "ddfs_fileLogger.hpp"
 
 ddfsLogger *ddfsLogger::singleton_logger= 0;
 std::ofstream ddfsLogger::myFile;

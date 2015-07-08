@@ -14,8 +14,9 @@
  *  GNU General Public License as published by the Free Software Foundation.
  */
 
-#include "ddfs_clusterPaxosInstance.h"
 #include <unistd.h>
+
+#include "ddfs_clusterPaxosInstance.hpp"
 
 ddfsLogger &global_logger_cpi = ddfsLogger::getInstance();
 
@@ -25,11 +26,11 @@ ddfsClusterPaxosInstance::ddfsClusterPaxosInstance () {
 
 ddfsClusterPaxosInstance::~ddfsClusterPaxosInstance () {}
 
-ddfsStatus ddfsClusterPaxosInstance::execute (uint64_t uniqueID, list <ddfsClusterMemberPaxos *>& participatingMembers)
+ddfsStatus ddfsClusterPaxosInstance::execute (uint64_t uniqueID, vector<ddfsClusterMemberPaxos *>& participatingMembers)
 {
-	list<ddfsClusterMemberPaxos *>::iterator clusterMemberIter;
+	vector<ddfsClusterMemberPaxos *>::iterator clusterMemberIter;
 	ddfsClusterMessagePaxos message = ddfsClusterMessagePaxos();
-	int clusterQuorum = (participatingMembers.size()+1)/2;
+	int clusterQuorum = (participatingMembers.size()+1)/s_quorum;
 	int currentCount = 0;
 	
 	/* Start the leader Election */
@@ -45,7 +46,7 @@ ddfsStatus ddfsClusterPaxosInstance::execute (uint64_t uniqueID, list <ddfsClust
 		 *  Promise cluster message should arrive for all the cluster members or atleast majority of cluster members.
 		 */
 		for(clusterMemberIter = participatingMembers.begin(); clusterMemberIter != participatingMembers.end(); clusterMemberIter++) {
-			if( (*clusterMemberIter)->isOnline().compareStatus(ddfsStatus(DDFS_OK)) == 0) {
+			if( (*clusterMemberIter)->isOnline() == false) {
 				global_logger_cpi << ddfsLogger::LOG_WARNING << "Node " << (*clusterMemberIter)->getUniqueIdentification() << " is offline";
 			}
 			/* Create packet for the Prepare request and send it to the choosen node */

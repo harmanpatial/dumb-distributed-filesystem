@@ -7,7 +7,7 @@
  */
 
 #include <iostream>
-#include "ddfs_status.h"
+#include "ddfs_status.hpp"
 
 ddfsStatus::ddfsStatus(DDFS_STATUS local_status) {
 	status = local_status;

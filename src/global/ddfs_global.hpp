@@ -15,8 +15,8 @@
 
 using std::string;
 
-#include "ddfs_status.h"
-#include "./../logger/ddfs_fileLogger.h"
+#include "ddfs_status.hpp"
+#include "./../logger/ddfs_fileLogger.hpp"
 
 /**
  * @class ddfsGlobal

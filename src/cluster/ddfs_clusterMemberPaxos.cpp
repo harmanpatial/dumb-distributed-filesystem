@@ -12,7 +12,7 @@
 #include <fstream>
 #include <string>
 
-#include "ddfs_clusterMemberPaxos.h"
+#include "ddfs_clusterMemberPaxos.hpp"
 
 ddfsLogger &global_logger_cmp = ddfsLogger::getInstance();
 
@@ -24,6 +24,7 @@ ddfsClusterMemberPaxos::ddfsClusterMemberPaxos() {
     networkPrivatePtr = NULL;
 
     network = new ddfsUdpConnection<ddfsClusterMemberPaxos>();
+    network->init();
 }
 
 ddfsClusterMemberPaxos::~ddfsClusterMemberPaxos() {
@@ -45,7 +46,8 @@ ddfsStatus ddfsClusterMemberPaxos::init(string hostn) {
     }
 
     /* Allocate request and response queues */
-    status = network->setupQueues(&reqQueue, &rspQueue, networkPrivatePtr); 
+    //status = network->setupQueues(&reqQueue, &rspQueue, networkPrivatePtr); 
+    status = network->setupPortal(networkPrivatePtr); 
 
     if(status.compareStatus(ddfsStatus(DDFS_OK)) == false) {
         global_logger_cmp << ddfsLogger::LOG_WARNING
@@ -54,7 +56,7 @@ ddfsStatus ddfsClusterMemberPaxos::init(string hostn) {
     }
 
     /* Start the response queue processing thread */
-    workingThreadQ.push_back(std::thread(&ddfsClusterMemberPaxos::processingResponses, this));
+    //workingThreadQ.push_back(std::thread(&ddfsClusterMemberPaxos::processingResponses, this));
 
     /* Subscribe to the response queue */
     status = network->subscribe(this, networkPrivatePtr);
@@ -71,19 +73,16 @@ ddfsStatus ddfsClusterMemberPaxos::init(string hostn) {
     return (ddfsStatus(DDFS_OK));
 }
 
-ddfsStatus ddfsClusterMemberPaxos::isOnline() {
-    bool stateOnline = false;
+bool ddfsClusterMemberPaxos::isOnline() {
+    bool online = false;
 
 	clusterMemberLock.lock();
     if(memberState == s_clusterMemberOnline)
-        stateOnline = true;
+        online = true;
 
 	clusterMemberLock.unlock();
 
-    if(stateOnline == true)
-            return (ddfsStatus(DDFS_OK));
-
-	return (ddfsStatus(DDFS_FAILURE));
+	return online;
 }
 
 ddfsStatus ddfsClusterMemberPaxos::isDead() {
@@ -138,8 +137,8 @@ void ddfsClusterMemberPaxos::setUniqueIdentification(int newIdentifier) {
 }
 
 int ddfsClusterMemberPaxos::getUniqueIdentification() {
-    if(isLocalNode() == false)
-        return 0;
+	if(isLocalNode() == false)
+        	return 0;
 	return uniqueIdentification;
 }
 
@@ -158,34 +157,34 @@ int ddfsClusterMemberPaxos::getLocalSocket() {
 }
 #endif
 
-void ddfsClusterMemberPaxos::callback(int numberOfEntries) {
-    /* This is a special case for when the connection is being about to
-     * close.
-     */
-    if(numberOfEntries == -1) {
-
-    }
-
-    if(numberOfEntries != 0) {
-        std::unique_lock<std::mutex> lock(responseQLock);
-        needToProcess.notify_all();
-    }/* responseQLock automatically unlocked */
-}
-
 ddfsStatus ddfsClusterMemberPaxos::processMessage(ddfsClusterMessage *) {
 
 	return (ddfsStatus(DDFS_OK));
 }
 
-
-void ddfsClusterMemberPaxos::processingResponses() {
+void ddfsClusterMemberPaxos::callback(void *data, int size) {
     //ddfsClusterMemberPaxos *member = (ddfsClusterMemberPaxos *) thisInstance;
     responseQEntry *entry = NULL;
     uint8_t numberOfDdfsMessages;
     //uint16_t typeOfService, totalLength;
-    uint8_t *data;
-    int i=0;
     ddfsStatus status(DDFS_FAILURE);
+    uint8_t *data_p = (uint8_t *) data;
+
+    /* This is a special case for when the connection is being about to
+     * close.
+     */
+    if((data == NULL) || (size <= 0)) {
+        return;
+    }
+
+#if 0
+    if(numberOfEntries != 0) {
+        std::unique_lock<std::mutex> lock(responseQLock);
+        needToProcess.notify_all();
+    }/* responseQLock automatically unlocked */
+
+
+void ddfsClusterMemberPaxos::processingResponses() {
 
     /* Go through the response queue */
     while(1) {
@@ -193,10 +192,9 @@ void ddfsClusterMemberPaxos::processingResponses() {
         needToProcess.wait(lk,
                         [] { return true; });
 
-        while ( rspQueue.empty() == false ) {
-            entry = rspQueue.front();
-            rspQueue.pop();
-            data = (uint8_t *) entry->data;
+        while (rspQueue.empty() == false ) {
+#endif
+            entry = (responseQEntry *) data;
 
             /* If this is a packet for the paxos iteration, network class should
              * handle this internally.
@@ -204,8 +202,8 @@ void ddfsClusterMemberPaxos::processingResponses() {
             if(entry->typeOfService == CLUSTER_MESSAGE_TOF_CLUSTER_MGMT) {
                 numberOfDdfsMessages = ((entry->totalLength)-sizeof(ddfsClusterHeader))/sizeof(ddfsClusterMessage);
 
-                for ( i = 0; i < numberOfDdfsMessages; i++ ) {
-                    status = processMessage((ddfsClusterMessage *)(data + sizeof(ddfsClusterHeader) + (i*sizeof(ddfsClusterMessage))));
+                for ( int i = 0; i < numberOfDdfsMessages; i++ ) {
+                    status = processMessage((ddfsClusterMessage *)(data_p + sizeof(ddfsClusterHeader) + (i*sizeof(ddfsClusterMessage))));
                     if(status.compareStatus(ddfsStatus(DDFS_OK)) == false) {
                         global_logger_cmp << ddfsLogger::LOG_WARNING
                                     << "networkCommunication :: Discarding a packet.\n";
@@ -213,8 +211,8 @@ void ddfsClusterMemberPaxos::processingResponses() {
                     }
                 }
             }
-        }
-    }
+     //   }
+//    }
 }
 
 ddfsStatus ddfsClusterMemberPaxos::sendClusterMetaData(ddfsClusterMessagePaxos *message) {
@@ -236,11 +234,17 @@ ddfsStatus ddfsClusterMemberPaxos::sendClusterMetaData(ddfsClusterMessagePaxos *
     /* Create the Request queue entry for this packet */
     request->typeOfService = packetHeader->typeOfService;
     request->totalLength = packetHeader->totalLength;
-    request->data = message;
+	if(request->totalLength > MAX_REQUEST_SIZE) {
+		free(request);
+		global_logger_cmp << ddfsLogger::LOG_WARNING
+				<< "Size of message is greater than MAX_REQUEST_SIZE : " << packetHeader->totalLength << "\n";
+		return (ddfsStatus(DDFS_FAILURE));
+	}
+	memcpy(request->data, message->returnBuffer(), request->totalLength);
     request->uniqueID = packetHeader->uniqueID;
     request->privateData = NULL;
     
-    reqQueue.push(request);
+    //reqQueue.push(request);
     /* Push the data to the request queue */
     network->sendData(message->returnBuffer(), message->returnBufferSize(),
                     networkPrivatePtr);
