@@ -21,18 +21,20 @@
 ddfsLogger &global_logger_cpi = ddfsLogger::getInstance();
 
 ddfsClusterPaxosInstance::ddfsClusterPaxosInstance () {
-	uniqueID = -1;
+	internalProposalNumber = -1;
 }
 
 ddfsClusterPaxosInstance::~ddfsClusterPaxosInstance () {}
 
-ddfsStatus ddfsClusterPaxosInstance::execute (uint64_t uniqueID, vector<ddfsClusterMemberPaxos *>& participatingMembers)
+ddfsStatus ddfsClusterPaxosInstance::execute (uint64_t proposalNumber, vector<ddfsClusterMemberPaxos *>& participatingMembers)
 {
 	vector<ddfsClusterMemberPaxos *>::iterator clusterMemberIter;
 	ddfsClusterMessagePaxos message = ddfsClusterMessagePaxos();
 	int clusterQuorum = (participatingMembers.size()+1)/s_quorum;
 	int currentCount = 0;
-	
+
+	internalProposalNumber = proposalNumber;	
+
 	/* Start the leader Election */
 	/* Algorithm is straight formward.
 	 * 
@@ -50,9 +52,10 @@ ddfsStatus ddfsClusterPaxosInstance::execute (uint64_t uniqueID, vector<ddfsClus
 				global_logger_cpi << ddfsLogger::LOG_WARNING << "Node " << (*clusterMemberIter)->getUniqueIdentification() << " is offline";
 			}
 			/* Create packet for the Prepare request and send it to the choosen node */
-			message.addMessage(CLUSTER_MESSAGE_LE_TYPE_PREPARE, uniqueID);
+			message.addMessage(CLUSTER_MESSAGE_LE_TYPE_PREPARE, internalProposalNumber);
 			(*clusterMemberIter)->sendClusterMetaData(&message);
 			(*clusterMemberIter)->setCurrentState(s_clusterMemberPaxos_LE_PREPARE);
+			(*clusterMemberIter)->setLastProposal(internalProposalNumber);
 		}
 
 		/*  Wait for the Promise response from Quorum */
@@ -60,6 +63,12 @@ ddfsStatus ddfsClusterPaxosInstance::execute (uint64_t uniqueID, vector<ddfsClus
 	
 		/*  Check the status of this instance of paxos algorithm */
 		for(clusterMemberIter = participatingMembers.begin(); clusterMemberIter != participatingMembers.end(); clusterMemberIter++) {
+			if(internalProposalNumber != (*clusterMemberIter)->getLastProposal()) {
+				global_logger_cpi << ddfsLogger::LOG_ERROR
+					<< "ddfsclusterPaxosInstance :: A higher proposal Number exists.\n";	
+				currentCount = 0;
+				break;
+			}
 			if((*clusterMemberIter)->getCurrentState() == s_clusterMemberPaxos_LE_PROMISE)
 				currentCount++;
 		}
@@ -71,7 +80,7 @@ ddfsStatus ddfsClusterPaxosInstance::execute (uint64_t uniqueID, vector<ddfsClus
 		for(clusterMemberIter = participatingMembers.begin(); clusterMemberIter != participatingMembers.end(); clusterMemberIter++) {
 			if((*clusterMemberIter)->getCurrentState() == s_clusterMemberPaxos_LE_PROMISE) {
 				/* Create packet for the "Accept Request" request and send it to the choosen node */
-				message.addMessage(CLUSTER_MESSAGE_LE_ACCEPT_REQUESTED, uniqueID);
+				message.addMessage(CLUSTER_MESSAGE_LE_ACCEPT_REQUESTED, internalProposalNumber);
 				(*clusterMemberIter)->sendClusterMetaData(&message);
 				(*clusterMemberIter)->setCurrentState(s_clusterMemberPaxos_LE_ACCEPT_REQUEST);
 			}
@@ -99,7 +108,7 @@ ddfsStatus ddfsClusterPaxosInstance::execute (uint64_t uniqueID, vector<ddfsClus
 	return (ddfsStatus(DDFS_FAILURE));
 }		/* -----  end of method ddfsClusterPaxosInstance::execute  ----- */
 
-ddfsStatus executeAsync(uint64_t uniqueID, list <ddfsClusterMemberPaxos *>& participatingMembers, ddfsClusterPaxos& cluster) {
+ddfsStatus executeAsync(uint64_t proposalNumber, list <ddfsClusterMemberPaxos *>& participatingMembers, ddfsClusterPaxos& cluster) {
 	return (ddfsStatus(DDFS_FAILURE));
 }		/* -----  end of method ddfsClusterPaxosInstance::executeAsync  ----- */
 

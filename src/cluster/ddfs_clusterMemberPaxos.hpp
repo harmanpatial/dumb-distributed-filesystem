@@ -18,10 +18,13 @@
 #include <thread>
 
 #include "ddfs_clusterMember.hpp"
+#include "ddfs_clusterPaxos.hpp"
 #include "ddfs_clusterMessagesPaxos.hpp"
 #include "../network/ddfs_udpConnection.hpp"
 #include "../global/ddfs_status.hpp"
 #include "../logger/ddfs_fileLogger.hpp"
+
+class ddfsClusterPaxos;
 
 enum clusterMemberState {
 	s_clusterMemberOnline	= 0, /* cluster member is online. */
@@ -29,11 +32,14 @@ enum clusterMemberState {
 	s_clusterMemberDead,
 	s_clusterMemberRecovering,
 	s_clusterMemberUnknown,
-	/*  Member state associated with Leader Election */
+	/*  Member state associated with Leader Election.
+	 */
 	s_clusterMemberPaxos_LE_PREPARE,
-	s_clusterMemberPaxos_LE_PROMISE,
+	s_clusterMemberPaxos_LE_PROMISE, /* Remote Node promised local node */
+	s_clusterMemberPaxos_LE_PROMISED, /* Local Node promised remote node */
 	s_clusterMemberPaxos_LE_ACCEPT_REQUEST,
-	s_clusterMemberPaxos_LE_ACCEPTED,
+	s_clusterMemberPaxos_LE_REQUEST_ACCEPTED,	/* Remote Node accepted request from Local Node */
+	s_clusterMemberPaxos_LE_ACCEPTED,	/* Loca Node accepted request from Remote Node */
 	s_clusterMemberPaxos_LE_COMPLETE,
 	s_clusterMemberPaxos_LEADER,	/* Member is the Cluster Leader */
 	s_clusterMemberPaxos_SLAVE	/* Member is slave */
@@ -48,10 +54,15 @@ enum clusterMemberState {
 class ddfsClusterMemberPaxos : public ddfsClusterMember<clusterMemberState, int, ddfsClusterMessagePaxos, int, int, ddfsUdpConnection<ddfsClusterMemberPaxos> > {
 public:
 	ddfsClusterMemberPaxos();
+
+	ddfsClusterMemberPaxos(ddfsClusterPaxos *cp) {
+		clusterPaxos = cp;
+	}
+
 	~ddfsClusterMemberPaxos();
 	ddfsStatus init(string hostn);
 	bool isOnline();
-	ddfsStatus isDead();
+	bool isDead();
 	clusterMemberState getCurrentState();
 	ddfsStatus setCurrentState(clusterMemberState);
 
@@ -68,28 +79,37 @@ public:
 #if 0
     int getLocalSocket();
 #endif
+	int getLastProposal() { return lastProposal; }
+	void setLastProposal(int newProposal) {	lastProposal = newProposal; }
+	
 	ddfsStatus sendClusterMetaData(ddfsClusterMessagePaxos *);
     void processingResponses();
     void callback(void *data, int size);
 private:
 	/* Identifies the cluster, of which this member is part of */
 	int clusterID;
+	static const int s_invalid_clusterID = -1;
 	/* memberID : This is unique ID of a cluster member */
 	int memberID;
+	static const int s_invalid_memberID = -1;
 	/* uniqueIdentifier for using it as Number in Paxos algorithm */
 	/* This is mac address shifted left by 12 bits */
 	uint64_t uniqueIdentification;
-	/* Current state of the cluster member */
 	clusterMemberState memberState;
 	/* The network class */
 	ddfsUdpConnection <ddfsClusterMemberPaxos> *network;
 	/* Mutex lock for this object */
 	std::mutex clusterMemberLock;
 
+	/* The ddfs cluster Paxos thing */
+	ddfsClusterPaxos* clusterPaxos;
+
     /* Request and Response queues shared with network layer */
     //std::queue <requestQEntry *> reqQueue;
     //std::queue <responseQEntry *> rspQueue;
     void *networkPrivatePtr;
+
+	bool local_node;
 
     std::vector<std::thread> workingThreadQ;
     //std::thread workingThread(ddfsClusterMemberPaxos::processingResponses, this);
@@ -102,12 +122,19 @@ private:
     /* HostName of this cluster member */
     string hostName;
 
+	int lastProposal = -1;
+
     bool isLocalNode() {
         if(hostName.compare("localhost") == 0)
             return true;
 
         return false;
     }
+
+	ddfsClusterMemberPaxos* localNode;
+	ddfsClusterMemberPaxos *getLocalNode() {
+		return localNode;
+	}
 
 	ddfsClusterMemberPaxos(const ddfsClusterMemberPaxos &other);  /* copy constructor */
 }; // class end

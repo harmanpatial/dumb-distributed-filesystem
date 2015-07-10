@@ -62,13 +62,14 @@ ddfsStatus ddfsClusterPaxos::leaderElection() {
         /* Remove all the elements from the list */
         members.clear();
         /*  If there is no other node in the cluster, no need to execute leader
-        *  election paxos instance.
+        *  election paxos instance, make the local node leader.
         */
-        if(clusterMemberCount <= 1) {
+        if(clusterMemberCount == 1) {
             global_logger_cp << ddfsLogger::LOG_INFO
-                << "Cannot perform leader election. Add more nodes in the cluster";
-            global_logger_cp << ddfsLogger::LOG_INFO
-                << "Number of members in the cluster : "<< clusterMemberCount;
+                << "Only one node in the cluster. Making localnode leader.";
+			// TODO : Make local node as leader.
+			setLeader(getLocalNode(), 1);
+			
             return (ddfsStatus(DDFS_CLUSTER_INSUFFICIENT_NODES));
         }
 
@@ -89,27 +90,38 @@ ddfsStatus ddfsClusterPaxos::leaderElection() {
         ddfsClusterPaxosInstance paxosInstance; 
 
         /* Execute the Paxos Instance */
-        status = paxosInstance.execute(getProposalNumber(), members);
+		int pr = getProposalNumber();
+        status = paxosInstance.execute(pr, members);
         if(status.compareStatus(ddfsStatus(DDFS_OK)) == false) {
+			int timeout = 0;
+
             retryCount--;
             global_logger_cp << ddfsLogger::LOG_WARNING << "********* LE : PAXOS INSTANCE FAILED : RETRYING : "
                    << retryCount << " *********";
+			srand(time(NULL));
+			while(timeout == 0)
+				timeout = rand()%400;
+			timeout = timeout + 100;
+
+			usleep(timeout);
+
             if(retryCount == 0) {
                 global_logger_cp << ddfsLogger::LOG_WARNING << "********* LE : FAILED : "
                    << retryCount << " *********";
+				break;
             }
                 
         } else {
+			setLeader(getLocalNode(), pr);
             leaderElectioncomp = true;
         }
     }
 
-    /*  TODO :: Start a thread for trying leader election again */
-    if ( leaderElectioncomp == false ) {
-        
-    }
+	if(leaderElectioncomp == true)
+		global_logger_cp << ddfsLogger::LOG_WARNING << "LEADER ELECTION SUCCESSFULL.";
+	else
+		global_logger_cp << ddfsLogger::LOG_WARNING << "FAILED LEADER ELECTION.";
 
-    global_logger_cp << ddfsLogger::LOG_WARNING << "LEADER ELECTION SUCCESSFULL.";
 	return status; 
 }
 
@@ -176,5 +188,25 @@ ddfsStatus ddfsClusterPaxos::removeMembers() {
 
 ddfsClusterMemberPaxos* ddfsClusterPaxos::getLocalNode() {
 	return localClusterMember;
+}
+
+ddfsClusterMemberPaxos* ddfsClusterPaxos::getLeader() { return leaderClusterMember; }
+
+void ddfsClusterPaxos::setLeader(ddfsClusterMemberPaxos* latest_leader, int pr) {
+	vector<ddfsClusterMemberPaxos *>::iterator iter;
+	ddfsClusterMessagePaxos message = ddfsClusterMessagePaxos();
+
+	leaderClusterMember = latest_leader;
+	message.addMessage(CLUSTER_MESSAGE_LE_LEADER_ELECTED, pr);
+
+	for(iter = clusterMembers.begin(); iter != clusterMembers.end(); iter++) {
+		(*iter)->sendClusterMetaData(&message);
+		
+		if((*iter) == leaderClusterMember)
+			(*iter)->setCurrentState(s_clusterMemberPaxos_LEADER);
+		else
+			(*iter)->setCurrentState(s_clusterMemberPaxos_SLAVE);
+	}
+
 }
 

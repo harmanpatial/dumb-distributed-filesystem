@@ -17,8 +17,8 @@
 ddfsLogger &global_logger_cmp = ddfsLogger::getInstance();
 
 ddfsClusterMemberPaxos::ddfsClusterMemberPaxos() {
-    clusterID = -1;
-    memberID = -1;
+    clusterID = s_invalid_clusterID;
+    memberID = s_invalid_memberID;
     uniqueIdentification = -1;
     memberState = s_clusterMemberUnknown;
     networkPrivatePtr = NULL;
@@ -85,19 +85,16 @@ bool ddfsClusterMemberPaxos::isOnline() {
 	return online;
 }
 
-ddfsStatus ddfsClusterMemberPaxos::isDead() {
-    bool stateOnline = false;
+bool ddfsClusterMemberPaxos::isDead() {
+	bool dead = false;
 
 	clusterMemberLock.lock();
     if(memberState == s_clusterMemberDead)
-        stateOnline = true;
+        dead = true;
 
 	clusterMemberLock.unlock();
 
-    if(stateOnline == true)
-            return (ddfsStatus(DDFS_OK));
-
-	return (ddfsStatus(DDFS_FAILURE));
+	return dead;
 }
 
 clusterMemberState ddfsClusterMemberPaxos::getCurrentState() {
@@ -150,15 +147,89 @@ int ddfsClusterMemberPaxos::getLocalSocket() {
     status = network->getServerSocket(&serverSocket);
     if(status.compareStatus(ddfsStatus(DDFS_OK)) == false) {
         global_logger_cmp << ddfsLogger::LOG_WARNING
-                    << "clusterMember:: Unable to get the server socket FD.\n";
+                    << "ddfsClusterMemberPaxos:: Unable to get the server socket FD.\n";
     }
 
     return serverSocket;
 }
 #endif
 
-ddfsStatus ddfsClusterMemberPaxos::processMessage(ddfsClusterMessage *) {
+ddfsStatus ddfsClusterMemberPaxos::processMessage(ddfsClusterMessage *message) {
 
+#if 0
+	if(isLocalNode() == false) {
+		global_logger_cmp << ddfsLogger::LOG_ERROR
+			<< "ddfsClusterMemberPaxos :: Not a local Node.\n";
+		return (ddfsStatus(DDFS_FAILURE));
+	}
+#endif
+	
+	if((getCurrentState() == s_clusterMemberPaxos_LE_COMPLETE) ||
+		(getCurrentState() == s_clusterMemberPaxos_LEADER) ||
+		(getCurrentState() == s_clusterMemberPaxos_SLAVE)) {
+		global_logger_cmp << ddfsLogger::LOG_INFO
+					<< "ddfsClusterMemberPaxos:: Dropping the message.";
+		return (ddfsStatus(DDFS_OK));
+	}
+
+	switch (message->messageType ) {
+		case CLUSTER_MESSAGE_LE_TYPE_PREPARE:
+			if(lastProposal < message->uniqueID) {
+			/* Accept the proposal value */
+				lastProposal = message->uniqueID;
+				/* Send the Promise message across */
+
+				ddfsClusterMessagePaxos reply = ddfsClusterMessagePaxos();
+
+				setCurrentState(s_clusterMemberPaxos_LE_PROMISED);
+				reply.addMessage(CLUSTER_MESSAGE_LE_TYPE_PROMISE, lastProposal);
+				sendClusterMetaData(&reply);
+			}
+			break;
+	
+		case CLUSTER_MESSAGE_LE_TYPE_PROMISE:
+			if((getCurrentState() == s_clusterMemberPaxos_LE_PREPARE) && (lastProposal == message->uniqueID))
+					setCurrentState(s_clusterMemberPaxos_LE_PROMISE);
+			break;
+	
+		case CLUSTER_MESSAGE_LE_ACCEPT_REQUESTED:
+			if((getCurrentState() == s_clusterMemberPaxos_LE_PROMISED) && (lastProposal == message->uniqueID)) {
+				/* Send the Accepted message across */
+				ddfsClusterMessagePaxos reply = ddfsClusterMessagePaxos();
+				reply.addMessage(CLUSTER_MESSAGE_LE_ACCEPTED, lastProposal);
+				setCurrentState(s_clusterMemberPaxos_LE_ACCEPTED);
+				sendClusterMetaData(&reply);
+			}
+			break;
+	
+		case CLUSTER_MESSAGE_LE_ACCEPTED:
+			if((getCurrentState() == s_clusterMemberPaxos_LE_ACCEPT_REQUEST) && (lastProposal == message->uniqueID))
+				setCurrentState(s_clusterMemberPaxos_LE_REQUEST_ACCEPTED);
+			break;
+
+		case CLUSTER_MESSAGE_LE_LEADER_ELECTED:
+			setCurrentState(s_clusterMemberPaxos_LEADER);
+			clusterPaxos->setLeader(this, message->uniqueID);
+			break;
+		default:
+			/* Case : Default */
+			global_logger_cmp << ddfsLogger::LOG_ERROR
+				<< "ddfsClusterMemberPaxos :: Message type is incorrect.\n";
+			
+			break;
+	}
+
+#if 0
+	if(message->messageType == CLUSTER_MESSAGE_LE_TYPE_PREPARE) {
+		}
+	} else if(message->messageType == CLUSTER_MESSAGE_LE_TYPE_PROMISE) {
+
+	} else if(message->messageType == CLUSTER_MESSAGE_LE_ACCEPT_REQUESTED) {
+
+	} else if(message->messageType == CLUSTER_MESSAGE_LE_ACCEPTED) {
+
+	}
+#endif
 	return (ddfsStatus(DDFS_OK));
 }
 
@@ -167,8 +238,8 @@ void ddfsClusterMemberPaxos::callback(void *data, int size) {
     responseQEntry *entry = NULL;
     uint8_t numberOfDdfsMessages;
     //uint16_t typeOfService, totalLength;
-    ddfsStatus status(DDFS_FAILURE);
     uint8_t *data_p = (uint8_t *) data;
+    ddfsStatus status(DDFS_FAILURE);
 
     /* This is a special case for when the connection is being about to
      * close.
@@ -202,7 +273,7 @@ void ddfsClusterMemberPaxos::processingResponses() {
             if(entry->typeOfService == CLUSTER_MESSAGE_TOF_CLUSTER_MGMT) {
                 numberOfDdfsMessages = ((entry->totalLength)-sizeof(ddfsClusterHeader))/sizeof(ddfsClusterMessage);
 
-                for ( int i = 0; i < numberOfDdfsMessages; i++ ) {
+                for (int i = 0; i < numberOfDdfsMessages; i++) {
                     status = processMessage((ddfsClusterMessage *)(data_p + sizeof(ddfsClusterHeader) + (i*sizeof(ddfsClusterMessage))));
                     if(status.compareStatus(ddfsStatus(DDFS_OK)) == false) {
                         global_logger_cmp << ddfsLogger::LOG_WARNING

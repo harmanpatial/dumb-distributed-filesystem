@@ -34,7 +34,7 @@ template <typename T_clusterMemberState, typename T_clusterID, typename T_Cluste
 class ddfsClusterMember {
 public:
 	virtual bool isOnline() = 0;
-	virtual ddfsStatus isDead() = 0;
+	virtual bool isDead() = 0;
 	
 	virtual T_clusterMemberState getCurrentState() = 0;
 	virtual ddfsStatus setCurrentState(T_clusterMemberState) = 0;

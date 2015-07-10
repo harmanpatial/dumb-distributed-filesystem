@@ -46,8 +46,8 @@ class ddfsClusterPaxosInstance
 		~ddfsClusterPaxosInstance ();                            /* destructor */    
 
 		/* ====================  ACCESSORS     ======================================= */
-		ddfsStatus execute(uint64_t uniqueID, vector <ddfsClusterMemberPaxos *>& participatingMembers);
-		ddfsStatus executeAsync(uint64_t uniqueID, vector <ddfsClusterMemberPaxos *>& participatingMembers, ddfsClusterPaxos& cluster);
+		ddfsStatus execute(uint64_t proposalNumber, vector <ddfsClusterMemberPaxos *>& participatingMembers);
+		ddfsStatus executeAsync(uint64_t proposalNumber, vector <ddfsClusterMemberPaxos *>& participatingMembers, ddfsClusterPaxos& cluster);
 		/* ====================  MUTATORS      ======================================= */
 		void abandon();
 		/* ====================  OPERATORS     ======================================= */
@@ -62,12 +62,12 @@ class ddfsClusterPaxosInstance
 	private:
 		/* ====================  METHODS       ======================================= */
 		ddfsClusterPaxosInstance (const ddfsClusterPaxosInstance &other);   /* copy constructor */
-        static const int s_timeout = 2;
+        static const int s_timeout = 2;		// In seconds.
 		static const int s_paxosInstanceInvalid = -1;
 		static const unsigned int s_quorum = 2; // This is a factor value. 2 means totalParticipatingMembers/2. So, half of the participating members.
 
 		/* ====================  DATA MEMBERS  ======================================= */
-		int uniqueID;
+		int internalProposalNumber;
 //		list <ddfsClusterMemberPaxos>& participatingMembers;
 
 }; /* -----  end of class ddfsClusterPaxosInstance  ----- */

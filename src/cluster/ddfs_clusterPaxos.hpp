@@ -36,7 +36,9 @@ using namespace std;
  * addMember*, removeMember* interface is exposed to the Admin can add or remove members for the cluster.
  *
  */
- 
+
+class ddfsClusterMemberPaxos; 
+
 class ddfsClusterPaxos:protected ddfsCluster<ddfsClusterMemberPaxos *, string> {
 private:
     /* Maximum Cluster Members */
@@ -45,6 +47,7 @@ private:
     /* Maximum Retries for a Leader Election */
     static const unsigned int s_retryCountLE = 5;
 	ddfsClusterMemberPaxos* localClusterMember;
+	ddfsClusterMemberPaxos* leaderClusterMember;
     /* Current cluster Member Count */
 	int clusterMemberCount;
 protected:
@@ -68,10 +71,14 @@ protected:
 	
 	/* Methods specific to Paxos algorithm */
 	ddfsClusterMemberPaxos* getLocalNode();
+	ddfsClusterMemberPaxos* getLeader();
+	
 public:
 	ddfsClusterPaxos();
 	~ddfsClusterPaxos();
 	static const int s_clusterIDInvalid = -1;
+	int lastAcceptedProposal;
+	void setLeader(ddfsClusterMemberPaxos* latest_leader, int pr);
 }; // class end
 
 #endif /* Ending DDFS_CLUSTER_PAXOS_H */

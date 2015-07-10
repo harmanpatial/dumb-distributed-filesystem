@@ -45,6 +45,7 @@ ddfsClusterMessagePaxos::~ddfsClusterMessagePaxos() {
 ddfsStatus ddfsClusterMessagePaxos::addMessage(uint16_t type, uint64_t uuid) {
 	ddfsMessage.messageType = htonl(type);
     ddfsMessage.Reserved1 = htonl(0);
+	/* In case of cluster meta data this is the proposal number */
 	ddfsMessage.uniqueID = htonl(uuid);
 
 	ddfsHeader.typeOfService = CLUSTER_MESSAGE_TOF_CLUSTER_MGMT;
