@@ -130,7 +130,6 @@ void ddfsClusterPaxos::asyncEventHandling(void *buffer, int bufferCount) {
 
 }
 
-//ddfsStatus ddfsClusterPaxos::addMember(ddfsClusterMemberPaxos *newMember) {
 ddfsStatus ddfsClusterPaxos::addMember(string newHostName) {
     
     vector<ddfsClusterMemberPaxos *>::iterator clusterMemberIter;

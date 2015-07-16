@@ -35,11 +35,11 @@ enum clusterMemberState {
 	/*  Member state associated with Leader Election.
 	 */
 	s_clusterMemberPaxos_LE_PREPARE,
-	s_clusterMemberPaxos_LE_PROMISE, /* Remote Node promised local node */
+	s_clusterMemberPaxos_LE_PROMISE_RECV, /* Remote Node promised local node */
 	s_clusterMemberPaxos_LE_PROMISED, /* Local Node promised remote node */
-	s_clusterMemberPaxos_LE_ACCEPT_REQUEST,
+	s_clusterMemberPaxos_LE_ACCEPT_REQUESTED,
 	s_clusterMemberPaxos_LE_REQUEST_ACCEPTED,	/* Remote Node accepted request from Local Node */
-	s_clusterMemberPaxos_LE_ACCEPTED,	/* Loca Node accepted request from Remote Node */
+	s_clusterMemberPaxos_LE_ACCEPTED,	/* Local Node accepted request from Remote Node */
 	s_clusterMemberPaxos_LE_COMPLETE,
 	s_clusterMemberPaxos_LEADER,	/* Member is the Cluster Leader */
 	s_clusterMemberPaxos_SLAVE	/* Member is slave */

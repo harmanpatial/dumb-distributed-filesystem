@@ -163,7 +163,12 @@ ddfsStatus ddfsClusterMemberPaxos::processMessage(ddfsClusterMessage *message) {
 		return (ddfsStatus(DDFS_FAILURE));
 	}
 #endif
-	
+
+#if 0
+	if(message->messageType == CLUSTER_MESSAGE_ADDING_MEMBER) {
+		if(isLocalNode()) {
+			clusterPaxos.removeMember();
+#endif
 	if((getCurrentState() == s_clusterMemberPaxos_LE_COMPLETE) ||
 		(getCurrentState() == s_clusterMemberPaxos_LEADER) ||
 		(getCurrentState() == s_clusterMemberPaxos_SLAVE)) {
@@ -172,7 +177,7 @@ ddfsStatus ddfsClusterMemberPaxos::processMessage(ddfsClusterMessage *message) {
 		return (ddfsStatus(DDFS_OK));
 	}
 
-	switch (message->messageType ) {
+	switch (message->messageType) {
 		case CLUSTER_MESSAGE_LE_TYPE_PREPARE:
 			if(lastProposal < message->uniqueID) {
 			/* Accept the proposal value */
@@ -189,7 +194,7 @@ ddfsStatus ddfsClusterMemberPaxos::processMessage(ddfsClusterMessage *message) {
 	
 		case CLUSTER_MESSAGE_LE_TYPE_PROMISE:
 			if((getCurrentState() == s_clusterMemberPaxos_LE_PREPARE) && (lastProposal == message->uniqueID))
-					setCurrentState(s_clusterMemberPaxos_LE_PROMISE);
+					setCurrentState(s_clusterMemberPaxos_LE_PROMISE_RECV);
 			break;
 	
 		case CLUSTER_MESSAGE_LE_ACCEPT_REQUESTED:
@@ -203,8 +208,8 @@ ddfsStatus ddfsClusterMemberPaxos::processMessage(ddfsClusterMessage *message) {
 			break;
 	
 		case CLUSTER_MESSAGE_LE_ACCEPTED:
-			if((getCurrentState() == s_clusterMemberPaxos_LE_ACCEPT_REQUEST) && (lastProposal == message->uniqueID))
-				setCurrentState(s_clusterMemberPaxos_LE_REQUEST_ACCEPTED);
+			if((getCurrentState() == s_clusterMemberPaxos_LE_ACCEPT_REQUESTED) && (lastProposal == message->uniqueID))
+				setCurrentState(s_clusterMemberPaxos_LE_COMPLETE);
 			break;
 
 		case CLUSTER_MESSAGE_LE_LEADER_ELECTED:

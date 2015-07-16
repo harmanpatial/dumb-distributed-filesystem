@@ -2,14 +2,11 @@
 
 DDFS is designed with extendibility in mind.
 
-People who are learning about Distributed Filesystem would find this filesystem
-very helpful.
+People who are learning about Distributed Filesystem would find this filesystem very helpful.
 
-It seems like a daunting job to design and implement a DFS.
-But what if you could implement only one part of it.
+It seems like a daunting task to design and implement a DFS, but what if you could implement only one part of it.
 DDFS is designed as set of template files for each major part of Distributed FileSystem
 eg. network, cluster algorithm, file metadata management.
 
-By only implementing the template class for a specific module, anybody can get handson
-with the distributed file system.
+By only implementing the template class for a specific module, anybody can get hands on experience with the distributed file system.
 

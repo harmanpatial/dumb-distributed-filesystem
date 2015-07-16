@@ -69,7 +69,7 @@ ddfsStatus ddfsClusterPaxosInstance::execute (uint64_t proposalNumber, vector<dd
 				currentCount = 0;
 				break;
 			}
-			if((*clusterMemberIter)->getCurrentState() == s_clusterMemberPaxos_LE_PROMISE)
+			if((*clusterMemberIter)->getCurrentState() == s_clusterMemberPaxos_LE_PROMISE_RECV)
 				currentCount++;
 		}
 
@@ -78,11 +78,11 @@ ddfsStatus ddfsClusterPaxosInstance::execute (uint64_t proposalNumber, vector<dd
 
 		/* Send the accept request to the nodes */
 		for(clusterMemberIter = participatingMembers.begin(); clusterMemberIter != participatingMembers.end(); clusterMemberIter++) {
-			if((*clusterMemberIter)->getCurrentState() == s_clusterMemberPaxos_LE_PROMISE) {
+			if((*clusterMemberIter)->getCurrentState() == s_clusterMemberPaxos_LE_PROMISE_RECV) {
 				/* Create packet for the "Accept Request" request and send it to the choosen node */
 				message.addMessage(CLUSTER_MESSAGE_LE_ACCEPT_REQUESTED, internalProposalNumber);
 				(*clusterMemberIter)->sendClusterMetaData(&message);
-				(*clusterMemberIter)->setCurrentState(s_clusterMemberPaxos_LE_ACCEPT_REQUEST);
+				(*clusterMemberIter)->setCurrentState(s_clusterMemberPaxos_LE_ACCEPT_REQUESTED);
 			}
 		}
 		

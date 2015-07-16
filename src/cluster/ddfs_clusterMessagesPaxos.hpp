@@ -1,4 +1,4 @@
-/*
+ /*
  * @file ddfs_clusterMessagePaxos.h 
  *
  * @breif Module containing the cluster messages.
@@ -39,7 +39,10 @@ enum clusterMessageType {
 	CLUSTER_MESSAGE_LE_TYPE_PROMISE,
 	CLUSTER_MESSAGE_LE_ACCEPT_REQUESTED,
 	CLUSTER_MESSAGE_LE_ACCEPTED,
-	CLUSTER_MESSAGE_LE_LEADER_ELECTED
+	CLUSTER_MESSAGE_LE_LEADER_ELECTED,
+	/* Addition - Removal of cluster members */
+	CLUSTER_MESSAGE_ADDING_MEMBER,
+	CLUSTER_MESSAGE_REMOVING_MEMBER
 };
 
 /******************************************************************
