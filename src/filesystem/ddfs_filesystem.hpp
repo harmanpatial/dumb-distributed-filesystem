@@ -18,21 +18,23 @@
 #ifndef DDFS_FILESYSTEM_HPP
 #define DDFS_FILESYSTEM_HPP
 
-tempate <typename T_fileHandler, 
+#include "../global/ddfs_status.hpp"
+
+template <typename T_fileHandler>
 class ddfsFileSystem {
 public:
-	virtual ddfsStatus open(string path, int mode, T_fileHandler handler) = 0;
-	virtual ddfsStatus close(T_fileHandler handler) = 0;
+	virtual ddfsStatus openFile(string path, int mode, T_fileHandler handler) = 0;
+	virtual ddfsStatus closeFile(T_fileHandler handler) = 0;
 
-	virtual ddfsStatus read(T_fileHandler handler, int size, void *buffer) = 0;
-	virtual ddfsStatus read(T_fileHandler handler, int size, void *buffer, int offset) = 0;
-	virtual ddfsStatus write(T_fileHandler handler, int size, void *buffer) = 0;
-	virtual ddfsStatus write(T_fileHandler handler, int size, void *buffer, int offset) = 0;
+	virtual ddfsStatus readFile(T_fileHandler handler, int size, void *buffer) = 0;
+	virtual ddfsStatus readFile(T_fileHandler handler, int size, void *buffer, int offset) = 0;
+	virtual ddfsStatus writeFile(T_fileHandler handler, int size, void *buffer) = 0;
+	virtual ddfsStatus writeFile(T_fileHandler handler, int size, void *buffer, int offset) = 0;
 	
-	virtual ddfsStatus seek(T_fileHandler handler, int offset) = 0;
+	virtual ddfsStatus seekFile(T_fileHandler handler, int offset) = 0;
 
-	virtual ddfsStatus create(string directory, string fileName, int mode) = 0;
-	virtual ddfsStatus mkdir(string directory, string directoryName) = 0;
+	virtual ddfsStatus createFile(string directory, string fileName, int mode) = 0;
+	virtual ddfsStatus makeForectory(string directory, string directoryName) = 0;
 
 	virtual ddfsStatus deleteFile(T_fileHandler handler) = 0;
 };

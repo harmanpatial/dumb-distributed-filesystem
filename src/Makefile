@@ -15,13 +15,15 @@ SRC_DIR1	= logger
 SRC_DIR2	= global
 SRC_DIR3	= network
 SRC_DIR4	= cluster
+SRC_DIR5	= filesystem
 TARGET		= libddfs.so.1
 OBJS		= ./global/ddfs_status.o ./logger/ddfs_fileLogger.o \
 			 ./cluster/ddfs_clusterMessagesPaxos.o \
 			./cluster/ddfs_clusterMemberPaxos.o \
 			./cluster/ddfs_clusterPaxos.o \
 			./cluster/ddfs_clusterPaxosInstance.o \
-			./global/ddfs_global.o 
+			./global/ddfs_global.o \
+			./filesystem/ddfs_simplefilesystem.o
 OBJLIBS		= 
 LIBS		= -L.
 
@@ -33,6 +35,7 @@ project_code:
 	$(MAKE) -C $(SRC_DIR2)
 	$(MAKE) -C $(SRC_DIR3)
 	$(MAKE) -C $(SRC_DIR4)
+	$(MAKE) -C $(SRC_DIR5)
 	@echo "*** DDFS Compilation Completed *****"
 	$(MAKE) lib
 
@@ -52,6 +55,7 @@ clean :
 	$(MAKE) clean -C $(SRC_DIR2)
 	$(MAKE) clean -C $(SRC_DIR3)
 	$(MAKE) clean -C $(SRC_DIR4)
+	$(MAKE) clean -C $(SRC_DIR5)
 
 force_look :
 	true
