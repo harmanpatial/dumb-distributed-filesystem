@@ -18,7 +18,10 @@
 #ifndef DDFS_FILESYSTEM_HPP
 #define DDFS_FILESYSTEM_HPP
 
+#include <string>
 #include "../global/ddfs_status.hpp"
+
+using namespace std;
 
 template <typename T_fileHandler>
 class ddfsFileSystem {

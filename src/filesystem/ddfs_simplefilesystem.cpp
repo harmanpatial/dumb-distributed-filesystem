@@ -14,16 +14,18 @@
  *  GNU General Public License as published by the Free Software Foundation.
  */
 
+#include <cstdio>
+
 #include "ddfs_simplefilesystem.hpp"
 
-ddfsLogger &global_logger_dsfh = ddfsLogger::getInstance();
-
-void ddfsSimpleFilesystem::init() {
-	metadataFileName = "/tmp/ddfsMetaDatafile";
+ddfsStatus ddfsSimpleFilesystem::init() {
+	metaData.init("/tmp/ddfsMetaDatafile");
+	return metaData.fillInMemDirectoryTree();
 }
 
-void ddfsSimpleFilesystem::init(string metaFileName) {
-	metadataFileName = metaFileName;
+ddfsStatus ddfsSimpleFilesystem::init(string metaFileName) {
+	metaData.init(metaFileName);
+	return metaData.fillInMemDirectoryTree();
 }
 
 ddfsStatus open(string path, int mode, void *handler) {
