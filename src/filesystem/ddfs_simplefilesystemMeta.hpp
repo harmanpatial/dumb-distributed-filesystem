@@ -191,7 +191,7 @@ private:
 	FILE *metaFileHandler;
 	
 	/* 
-	 *  One block of Metadata file contains the following. Total Size : 512 bytes
+	 *  One block of Metadata file contains the following. Total Size : 1024 bytes
 	 *
 	 *  1.  FileName -- 256 bytes/character
 	 *  2.  isDirectory.  -- 4 bytes
@@ -200,21 +200,41 @@ private:
 	 *  5.  Permissions -- 8 bytes.
 	 *  6.  Creation Time -- 8 bytes.
 	 *  7.  Last Access Time -- 8 bytes.
-	 *  9.  Last Modified TIme -- 8 bytes.
-	 *  10.  Offset to 1st file in this directory -- 8 bytes.
-	 *  11. Offset to 2nd file in this directory -- 8 bytes.
-	 *  12. Offset to 3nd file in this directory -- 8 bytes.
-	 *  13. Offset to 4th file in this directory -- 8 bytes.
-	 *  14. Offset to 5th file in this directory -- 8 bytes.
-	 *  15. ---- 
+	 *  9.  Last Modified Time -- 8 bytes.
+	 *  10. Reserved -- 336 bytes.
+	 *  11. Offset to 1st file in this directory -- 8 bytes.
+	 *  12. Offset to 2nd file in this directory -- 8 bytes.
+	 *  13. Offset to 3nd file in this directory -- 8 bytes.
+	 *  14. Offset to 4th file in this directory -- 8 bytes.
+	 *  15. Offset to 5th file in this directory -- 8 bytes.
 	 *  16. ---- 
-	 *  17. Offset to 25th file in this directory -- 8 bytes.
-	 *  18. Offset to next block for this directory -- 8 bytes.
+	 *  17. ---- 
+	 *  18. Offset to 23th file in this directory -- 8 bytes.
+	 *  19. Offset to next block for this directory -- 8 bytes.
 	 *
+	 *
+	 *  If the file is a file and not directory then from 11 onwards
+	 *  metadata would be.
+	 *
+	 *  11. Complete path to Primary copy of the Data. -- 128 bytes.
+	 *  12. Complete path to 2nd copy of the Data. -- 128 bytes.
+	 *  13. Complete path to 3rd copy of the Data. -- 128 bytes.
+	 *  14. Reserved -- 192 bytes.
+	 * 
 	 */
-	static const int metaDatablockSize = 512;
+	static const int metaDatablockSize = 1024;
     static const int fileNameSize = 256;
-    static const int numberOfFileInOneBlock = 26;
+    static const int numberOfFileInOneBlock = 23;
+	struct dData {
+		uint64_t filesOffset[numberOfFileInOneBlock];
+		uint64_t nextBlockOffset;
+	};
+	struct fData {
+		char primary_copy[128];
+		char second_copy[128];
+		char third_copy[128];
+		uint8_t reserved[192];
+	};
 	struct metaDataBlock {
 		char fileName[fileNameSize];
 		uint32_t isDirectory;
@@ -224,8 +244,11 @@ private:
 		uint64_t creationTime;
 		uint64_t lastAccessTime;
 		uint64_t lastModifiedTime;
-		uint64_t filesOffset[numberOfFileInOneBlock];
-		uint64_t nextBlockOffset;
+		uint8_t reserved_0[336];
+		union {
+			dData directoryData;
+			fData fileData;
+		} data;
 	}  __attribute__((packed));
 public:
 	ddfsStatus init(string newFile) {
@@ -268,8 +291,8 @@ public:
             root.creationTime = 1;  // TODO: Fix the timing
             root.lastAccessTime = 1;  // TODO: Fix the timing
             root.lastModifiedTime = 1;  // TODO: Fix the timing
-            bzero(&(root.filesOffset), numberOfFileInOneBlock*sizeof(uint64_t));;
-            root.nextBlockOffset = -1;
+            bzero(&(root.data.directoryData.filesOffset), numberOfFileInOneBlock*sizeof(uint64_t));;
+            root.data.directoryData.nextBlockOffset = -1;
 
             fseek(metaFileHandler, 0, SEEK_SET);
             int res = fwrite(&root, metaDatablockSize, 1, metaFileHandler); 
@@ -301,7 +324,7 @@ public:
 			inMemDirectoryTree.insertNode(temp->offset, temp->fileName);
 			
 			for (int i = 0; i < temp->numberOfFiles; i++) {
-            	fseek(metaFileHandler, temp->filesOffset[i], SEEK_SET);
+            	fseek(metaFileHandler, temp->data.directoryData.filesOffset[i], SEEK_SET);
 
 				temp1 = (metaDataBlock *) malloc(sizeof(metaFileHandler));
 			    result = fread((void *) temp1, metaDatablockSize, 0, metaFileHandler);
@@ -319,7 +342,14 @@ public:
 
 		return (ddfsStatus(DDFS_OK));
 	} 
+/*
+	ddfsStatus get() {
 
+
+
+
+	}
+*/
 };
 
 

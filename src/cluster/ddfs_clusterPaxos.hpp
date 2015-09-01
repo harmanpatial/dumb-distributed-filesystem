@@ -50,6 +50,7 @@ private:
 	ddfsClusterMemberPaxos* leaderClusterMember;
     /* Current cluster Member Count */
 	int clusterMemberCount;
+	uint32_t clusterMemberID;
 protected:
 	ddfsStatus init();
 	vector<ddfsClusterMemberPaxos *> clusterMembers;

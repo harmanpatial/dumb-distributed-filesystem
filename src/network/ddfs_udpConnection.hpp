@@ -74,9 +74,10 @@ public:
 template <typename T_sub>
 class responseQueue {
 public:
-    std::queue <responseQEntry *> *dataBuffer;
+    std::queue <responseQEntry> dataBuffer;
     std::mutex rLock;
-    int index;
+	int responseQIndex;
+	int correspondingRequestQIndex;
 	bool in_use;
 
     /* Subscription is bound to response queues.
@@ -97,8 +98,8 @@ public:
     std::queue <struct request *> pipe;
     std::mutex rLock;
 	bool in_use;
-    int index;
-
+	int requestQIndex;
+	int correspondingResponseQIndex;
 };
 
 enum DDFS_NETWORK_TYPE {
@@ -255,6 +256,9 @@ public:
 			return ddfsStatus(DDFS_FAILURE);
 
 		struct request * entry = new request;
+		ddfsClusterHeader *clusterH = (ddfsClusterHeader *) data;
+
+		clusterH->internalIndex = rQueueInstance->correspondingResponseQIndex;
 
 		entry->data = data;
 		entry->size = size;
@@ -311,7 +315,7 @@ public:
 			return (ddfsStatus(DDFS_FAILURE));
 		}
 
-	    rspQInstance = &responseQueues[reqQInstance->index];
+	    rspQInstance = &responseQueues[reqQInstance->requestQIndex];
 
     	rspQInstance->subscriptions.addSubscription(owner);
 
@@ -455,6 +459,43 @@ public:
 						<< strerror(errno) <<"\n";
             continue;
         }
+
+		ddfsClusterHeader *clusterH = (ddfsClusterHeader *) udpInstance->tempBuffer;
+
+		/* We alloc it here and it would be deallocated by whoever is the consumer of
+		 * this response entry */
+		void *totalMessage = malloc(clusterH->totalLength);
+		memcpy(totalMessage, udpInstance->tempBuffer, sizeof(ddfsClusterHeader));
+
+		 /* Parse the ddfsHeader and know how much data is expected with
+		 * this ddfs Message. Alloc memory and 
+		 *
+		 * Place the ddfsHeader as well as the data on the response queue.
+		 */
+		if(clusterH->totalLength > 0) {
+        	ret = recvfrom(udpInstance->serverSocketFD, (void *) (((uint8_t *) totalMessage) + sizeof(ddfsClusterHeader)),
+            	            clusterH->totalLength, 0,
+                	        (struct sockaddr *) &serverAddr, (socklen_t *)&serverAddrLen);
+
+			if(ret == -1) {
+				udpInstance->global_logger_tem << ddfsLogger::LOG_WARNING << "UDP:: BT : Fail to get IP address from Host Name. "
+							<< strerror(errno) <<"\n";
+            	continue;
+        	}
+		}
+
+		/* Does not matter that that template is defined as (void *) */
+		//responseQueue<T_sub> rspQInstance = udpInstance->responseQueues[clusterH->internalIndex];
+		responseQEntry newEntry;
+
+		newEntry.typeOfService = clusterH->typeOfService;
+		newEntry.totalLength = clusterH->totalLength;
+		newEntry.data = totalMessage;
+		
+		udpInstance->responseQueues[clusterH->internalIndex].rLock.lock();
+		udpInstance->responseQueues[clusterH->internalIndex].dataBuffer.push(newEntry);
+		udpInstance->responseQueues[clusterH->internalIndex].rLock.unlock();
+
 
         /* Periodically keep on trying to connect to the set of nodes
          * that has been configured.

@@ -95,16 +95,17 @@ be attached in this packet. "Total Length".
 /*  Packet Header */
 typedef struct {
 	uint8_t version;        /* 1 bytes */
-	uint8_t typeOfService;  /* 1 bytes */
+	uint8_t typeOfService;  /* 1 bytes -- enum clusterMessageTypeOfService */
 	uint16_t totalLength;   /* 2 bytes */
     uint64_t uniqueID;      /* 4 bytes */
-    uint32_t Reserved1;     /* 4 bytes */
+	uint32_t internalIndex;	/* 2 bytes */
+    uint32_t Reserved1;     /* 2 bytes */
     uint32_t Reserved2;     /* 4 bytes */
 } __attribute__((packed)) ddfsClusterHeader;    /* Total 16 bytes */
 
 /*  Packet cluster message */
 typedef struct {
-    uint16_t messageType;
+    uint16_t messageType;	/* 2 bytes -- enum clusterMessageType */
     uint16_t Reserved1;
     uint64_t uniqueID;
 } __attribute__((packed)) ddfsClusterMessage;
@@ -136,7 +137,7 @@ typedef struct {
 typedef struct {
     uint8_t typeOfService;
     uint16_t totalLength;
-    uint8_t data[256];
+    void *data;
 } responseQEntry; 
 
 /*!

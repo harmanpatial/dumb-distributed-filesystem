@@ -51,7 +51,8 @@ ddfsStatus ddfsClusterPaxosInstance::execute (uint64_t proposalNumber, vector<dd
 			if( (*clusterMemberIter)->isOnline() == false) {
 				global_logger_cpi << ddfsLogger::LOG_WARNING << "Node " << (*clusterMemberIter)->getUniqueIdentification() << " is offline";
 			}
-			/* Create packet for the Prepare request and send it to the choosen node */
+
+			/* Create packet for the PAXOS Prepare request and send it to the choosen node */
 			message.addMessage(CLUSTER_MESSAGE_LE_TYPE_PREPARE, internalProposalNumber);
 			(*clusterMemberIter)->sendClusterMetaData(&message);
 			(*clusterMemberIter)->setCurrentState(s_clusterMemberPaxos_LE_PREPARE);
@@ -61,7 +62,15 @@ ddfsStatus ddfsClusterPaxosInstance::execute (uint64_t proposalNumber, vector<dd
 		/*  Wait for the Promise response from Quorum */
 		sleep(s_timeout);
 	
-		/*  Check the status of this instance of paxos algorithm */
+		/*  Check the status of this instance of paxos algorithm.
+		 *  TODO: Promise message would also contain the vote information.
+		 *  	  A vote is tuple of (proposal Number and agreedUponValue).
+		 *  	  AgreedUponValue is this case is the id of the elected leader.
+		 *
+		 *  	  If any promise replied with the AgreedUponValue of anything except -1, then
+		 *  	  that AgreedUponValue should be used in the ACCEPT Request and not the local
+		 *  	  node's id.
+		 */
 		for(clusterMemberIter = participatingMembers.begin(); clusterMemberIter != participatingMembers.end(); clusterMemberIter++) {
 			if(internalProposalNumber != (*clusterMemberIter)->getLastProposal()) {
 				global_logger_cpi << ddfsLogger::LOG_ERROR
@@ -77,6 +86,10 @@ ddfsStatus ddfsClusterPaxosInstance::execute (uint64_t proposalNumber, vector<dd
 			return (ddfsStatus(DDFS_FAILURE));
 
 		/* Send the accept request to the nodes */
+		/* TODO: Should only send the accept request to the set of nodes that responded 
+		 * positively to the prepare request.
+		 * This is what protocol dictates. SHOULD STRICTLY FOLLOW THE PROTOCOL.
+		 */
 		for(clusterMemberIter = participatingMembers.begin(); clusterMemberIter != participatingMembers.end(); clusterMemberIter++) {
 			if((*clusterMemberIter)->getCurrentState() == s_clusterMemberPaxos_LE_PROMISE_RECV) {
 				/* Create packet for the "Accept Request" request and send it to the choosen node */

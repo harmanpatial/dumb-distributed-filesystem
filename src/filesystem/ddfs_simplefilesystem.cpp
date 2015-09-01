@@ -28,50 +28,50 @@ ddfsStatus ddfsSimpleFilesystem::init(string metaFileName) {
 	return metaData.fillInMemDirectoryTree();
 }
 
-ddfsStatus open(string path, int mode, void *handler) {
+ddfsStatus ddfsSimpleFilesystem::openFile(string path, int mode, void *handler) {
 	return (ddfsStatus(DDFS_FAILURE));
 }
 
-ddfsStatus closeFile(void * handler) {
+ddfsStatus ddfsSimpleFilesystem::closeFile(void * handler) {
 	return (ddfsStatus(DDFS_FAILURE));
 
 }
-ddfsStatus readFile(void *handler, int size, void *buffer) {
-	return (ddfsStatus(DDFS_FAILURE));
-
-}
-
-ddfsStatus readFile(void * handler, int size, void *buffer, int offset) {
+ddfsStatus ddfsSimpleFilesystem::readFile(void *handler, int size, void *buffer) {
 	return (ddfsStatus(DDFS_FAILURE));
 
 }
 
-ddfsStatus writeFile(void * handler, int size, void *buffer) {
+ddfsStatus ddfsSimpleFilesystem::readFile(void * handler, int size, void *buffer, int offset) {
 	return (ddfsStatus(DDFS_FAILURE));
 
 }
 
-ddfsStatus writeFile(void * handler, int size, void *buffer, int offset) {
+ddfsStatus ddfsSimpleFilesystem::writeFile(void * handler, int size, void *buffer) {
+	return (ddfsStatus(DDFS_FAILURE));
+
+}
+
+ddfsStatus ddfsSimpleFilesystem::writeFile(void * handler, int size, void *buffer, int offset) {
 	return (ddfsStatus(DDFS_FAILURE));
 
 }	
 
-ddfsStatus seekFile(void * handler, int offset){
+ddfsStatus ddfsSimpleFilesystem::seekFile(void * handler, int offset){
 	return (ddfsStatus(DDFS_FAILURE));
 
 }
 
-ddfsStatus createFile(string directory, string fileName, int mode) {
+ddfsStatus ddfsSimpleFilesystem::createFile(string directory, string fileName, int mode) {
 	return (ddfsStatus(DDFS_FAILURE));
 
 }
 
-ddfsStatus makedirectory(string directory, string directoryName) {
+ddfsStatus ddfsSimpleFilesystem::makedirectory(string directory, string directoryName) {
 	return (ddfsStatus(DDFS_FAILURE));
 
 }
 
-ddfsStatus deleteFile(void *handler){
+ddfsStatus ddfsSimpleFilesystem::deleteFile(void *handler){
 	return (ddfsStatus(DDFS_FAILURE));
 
 }

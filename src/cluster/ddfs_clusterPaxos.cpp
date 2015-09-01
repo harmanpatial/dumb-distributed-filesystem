@@ -44,10 +44,11 @@ ddfsClusterPaxos::~ddfsClusterPaxos() {
 
 uint64_t ddfsClusterPaxos::getProposalNumber() {
     paxosProposalNumber++;
-    if(paxosProposalNumber == std::numeric_limits<uint64_t>::max()) {
+    if(paxosProposalNumber == std::numeric_limits<uint32_t>::max()) {
         paxosProposalNumber = 1;
     }
-    return paxosProposalNumber;
+	
+    return ((paxosProposalNumber << 32) | clusterMemberID);
 }
 
 ddfsStatus ddfsClusterPaxos::leaderElection() {

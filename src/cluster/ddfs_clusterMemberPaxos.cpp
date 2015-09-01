@@ -20,7 +20,7 @@ ddfsClusterMemberPaxos::ddfsClusterMemberPaxos() {
     clusterID = s_invalid_clusterID;
     memberID = s_invalid_memberID;
     uniqueIdentification = -1;
-    memberState = s_clusterMemberUnknown;
+    memberState.store(s_clusterMemberUnknown);
     networkPrivatePtr = NULL;
 
     network = new ddfsUdpConnection<ddfsClusterMemberPaxos>();
@@ -77,7 +77,7 @@ bool ddfsClusterMemberPaxos::isOnline() {
     bool online = false;
 
 	clusterMemberLock.lock();
-    if(memberState == s_clusterMemberOnline)
+    if(memberState.load() == s_clusterMemberOnline)
         online = true;
 
 	clusterMemberLock.unlock();
@@ -89,7 +89,7 @@ bool ddfsClusterMemberPaxos::isDead() {
 	bool dead = false;
 
 	clusterMemberLock.lock();
-    if(memberState == s_clusterMemberDead)
+    if(memberState.load() == s_clusterMemberDead)
         dead = true;
 
 	clusterMemberLock.unlock();
@@ -102,9 +102,7 @@ clusterMemberState ddfsClusterMemberPaxos::getCurrentState() {
 }
 
 ddfsStatus ddfsClusterMemberPaxos::setCurrentState(clusterMemberState newState) {
-	clusterMemberLock.lock();
-	memberState = newState;
-	clusterMemberLock.unlock();
+	memberState.store(newState);
 	return (ddfsStatus(DDFS_OK));
 }
 

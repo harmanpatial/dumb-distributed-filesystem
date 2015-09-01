@@ -16,6 +16,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <thread>
+#include <atomic>
 
 #include "ddfs_clusterMember.hpp"
 #include "ddfs_clusterPaxos.hpp"
@@ -95,7 +96,9 @@ private:
 	/* uniqueIdentifier for using it as Number in Paxos algorithm */
 	/* This is mac address shifted left by 12 bits */
 	uint64_t uniqueIdentification;
-	clusterMemberState memberState;
+
+	/* TODO: Should make it  */
+	std::atomic<clusterMemberState> memberState;
 	/* The network class */
 	ddfsUdpConnection <ddfsClusterMemberPaxos> *network;
 	/* Mutex lock for this object */
