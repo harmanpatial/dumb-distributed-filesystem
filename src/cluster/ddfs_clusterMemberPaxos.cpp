@@ -23,7 +23,7 @@ ddfsClusterMemberPaxos::ddfsClusterMemberPaxos() {
     memberState.store(s_clusterMemberUnknown);
     networkPrivatePtr = NULL;
 
-    network = new ddfsUdpConnection<ddfsClusterMemberPaxos>();
+    network = new ddfsTcpConnection<ddfsClusterMemberPaxos>();
     network->init();
 }
 
@@ -31,13 +31,56 @@ ddfsClusterMemberPaxos::~ddfsClusterMemberPaxos() {
     delete(network);
 }
 
-ddfsStatus ddfsClusterMemberPaxos::init(string hostn) {
-    ddfsStatus status(DDFS_FAILURE);
+ddfsStatus ddfsClusterMemberPaxos::init(string hostn, ddfsClusterMemberPaxos *localNode) {
+    ddfsStatus status(DDFS_OK);
 
     hostName = hostn;
 
-    /* Initialize the underline network class */
-    status = network->openConnection(hostName);
+    if(network) {
+        if(!localNode) {
+            global_logger_cmp << ddfsLogger::LOG_INFO
+                        << "clusterMemberPaxos :: Localhost Initialization started.\n";
+        } else {
+            global_logger_cmp << ddfsLogger::LOG_INFO
+                        << "clusterMemberPaxos :: Initialization already done.\n";
+            return (ddfsStatus(DDFS_OK));
+        }
+    } else {
+        network = new ddfsTcpConnection<ddfsClusterMemberPaxos>();
+    }
+
+    network->init();
+
+    global_logger_cmp << ddfsLogger::LOG_INFO
+                        << "clusterMemberPaxos :: Opening the network connection.\n";
+
+    /*   TODO : Only connect to the remote IP server port if localIP < remoteIP,
+     *          else it is the responsibility of the remote IP to connect to my
+     *          DDFS_SERVER_PORT.
+     */
+
+    bool doNotConnect = false;
+    
+    if(localNode != NULL) {
+        string localHostName = localNode->getHostName();
+
+        global_logger_cmp << ddfsLogger::LOG_INFO
+                        << "localHost name : " << localHostName << ". remoteHostName : " << hostn << "\n";
+
+        for(unsigned int i=0; i < localHostName.size() && i < hostn.size(); i++) {
+            if(localHostName[i] > hostn[i]) {
+                doNotConnect = true;
+            }
+        }
+    }
+
+    /*  Initialize the underline network class */
+    if(doNotConnect == false) {
+        if(!localNode)
+            status = network->openConnection("localhost");
+        else
+            status = network->openConnection(hostName);
+    }
 
     if(status.compareStatus(ddfsStatus(DDFS_OK)) == false) {
         global_logger_cmp << ddfsLogger::LOG_WARNING
@@ -47,7 +90,7 @@ ddfsStatus ddfsClusterMemberPaxos::init(string hostn) {
 
     /* Allocate request and response queues */
     //status = network->setupQueues(&reqQueue, &rspQueue, networkPrivatePtr); 
-    status = network->setupPortal(networkPrivatePtr); 
+    status = network->setupPortal(&networkPrivatePtr); 
 
     if(status.compareStatus(ddfsStatus(DDFS_OK)) == false) {
         global_logger_cmp << ddfsLogger::LOG_WARNING
@@ -65,6 +108,15 @@ ddfsStatus ddfsClusterMemberPaxos::init(string hostn) {
         global_logger_cmp << ddfsLogger::LOG_WARNING
                     << "clusterMemberPaxos :: Unable to subscribe to Queues.\n";
         return status;
+    }
+
+    if(getHostName().compare("localhost") && 0) {
+        global_logger_cmp << ddfsLogger::LOG_INFO
+                << "Sending a test packet to " << getHostName() << "\n";
+
+        std::string s("DDFS Destination Node : ");
+        s.append(getHostName());
+        network->sendData((void *)s.c_str(), s.size(), networkPrivatePtr);
     }
 
     /* Incase this instance is of localNode, 
@@ -165,75 +217,12 @@ ddfsStatus ddfsClusterMemberPaxos::processMessage(ddfsClusterMessage *message) {
 #if 0
 	if(message->messageType == CLUSTER_MESSAGE_ADDING_MEMBER) {
 		if(isLocalNode()) {
-			clusterPaxos.removeMember();
+			clusterPaxos->removeMember();
 #endif
-	if((getCurrentState() == s_clusterMemberPaxos_LE_COMPLETE) ||
-		(getCurrentState() == s_clusterMemberPaxos_LEADER) ||
-		(getCurrentState() == s_clusterMemberPaxos_SLAVE)) {
-		global_logger_cmp << ddfsLogger::LOG_INFO
-					<< "ddfsClusterMemberPaxos:: Dropping the message.";
-		return (ddfsStatus(DDFS_OK));
-	}
 
-	switch (message->messageType) {
-		case CLUSTER_MESSAGE_LE_TYPE_PREPARE:
-			if(lastProposal < message->uniqueID) {
-			/* Accept the proposal value */
-				lastProposal = message->uniqueID;
-				/* Send the Promise message across */
+	//return clusterPaxos->processMessage(this, message);
+	return (ddfsStatus(DDFS_FAILURE));
 
-				ddfsClusterMessagePaxos reply = ddfsClusterMessagePaxos();
-
-				setCurrentState(s_clusterMemberPaxos_LE_PROMISED);
-				reply.addMessage(CLUSTER_MESSAGE_LE_TYPE_PROMISE, lastProposal);
-				sendClusterMetaData(&reply);
-			}
-			break;
-	
-		case CLUSTER_MESSAGE_LE_TYPE_PROMISE:
-			if((getCurrentState() == s_clusterMemberPaxos_LE_PREPARE) && (lastProposal == message->uniqueID))
-					setCurrentState(s_clusterMemberPaxos_LE_PROMISE_RECV);
-			break;
-	
-		case CLUSTER_MESSAGE_LE_ACCEPT_REQUESTED:
-			if((getCurrentState() == s_clusterMemberPaxos_LE_PROMISED) && (lastProposal == message->uniqueID)) {
-				/* Send the Accepted message across */
-				ddfsClusterMessagePaxos reply = ddfsClusterMessagePaxos();
-				reply.addMessage(CLUSTER_MESSAGE_LE_ACCEPTED, lastProposal);
-				setCurrentState(s_clusterMemberPaxos_LE_ACCEPTED);
-				sendClusterMetaData(&reply);
-			}
-			break;
-	
-		case CLUSTER_MESSAGE_LE_ACCEPTED:
-			if((getCurrentState() == s_clusterMemberPaxos_LE_ACCEPT_REQUESTED) && (lastProposal == message->uniqueID))
-				setCurrentState(s_clusterMemberPaxos_LE_COMPLETE);
-			break;
-
-		case CLUSTER_MESSAGE_LE_LEADER_ELECTED:
-			setCurrentState(s_clusterMemberPaxos_LEADER);
-			clusterPaxos->setLeader(this, message->uniqueID);
-			break;
-		default:
-			/* Case : Default */
-			global_logger_cmp << ddfsLogger::LOG_ERROR
-				<< "ddfsClusterMemberPaxos :: Message type is incorrect.\n";
-			
-			break;
-	}
-
-#if 0
-	if(message->messageType == CLUSTER_MESSAGE_LE_TYPE_PREPARE) {
-		}
-	} else if(message->messageType == CLUSTER_MESSAGE_LE_TYPE_PROMISE) {
-
-	} else if(message->messageType == CLUSTER_MESSAGE_LE_ACCEPT_REQUESTED) {
-
-	} else if(message->messageType == CLUSTER_MESSAGE_LE_ACCEPTED) {
-
-	}
-#endif
-	return (ddfsStatus(DDFS_OK));
 }
 
 void ddfsClusterMemberPaxos::callback(void *data, int size) {

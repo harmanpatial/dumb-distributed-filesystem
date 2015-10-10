@@ -9,6 +9,16 @@
 #include <iostream>
 #include "ddfs_status.hpp"
 
+
+int red::initialize() {
+    int ted;
+    ted = 45;
+    if(ted < 3)
+        ted = 3;
+    return ted;
+}
+
+
 ddfsStatus::ddfsStatus(DDFS_STATUS local_status) {
 	status = local_status;
 }

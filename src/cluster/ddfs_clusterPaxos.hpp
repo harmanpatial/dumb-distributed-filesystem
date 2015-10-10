@@ -18,6 +18,7 @@
 
 #include "ddfs_cluster.hpp"
 #include "ddfs_clusterMemberPaxos.hpp"
+#include "ddfs_clusterPaxosInstance.hpp"
 #include "../global/ddfs_status.hpp"
 
 using namespace std;
@@ -51,7 +52,9 @@ private:
     /* Current cluster Member Count */
 	int clusterMemberCount;
 	uint32_t clusterMemberID;
-protected:
+
+    ddfsClusterPaxosInstance paxosInstance;
+public:
 	ddfsStatus init();
 	vector<ddfsClusterMemberPaxos *> clusterMembers;
 	/*
@@ -65,6 +68,7 @@ protected:
 	ddfsStatus leaderElection();
 	uint64_t getProposalNumber();
 	void asyncEventHandling(void *buffer, int bufferCount);
+	ddfsStatus processMessage (ddfsClusterMemberPaxos *member, ddfsClusterMessage *message);
 	ddfsStatus addMember(string addHostName);
 	ddfsStatus addMembers();    /* Does nothing at this point */
 	ddfsStatus removeMember(string removeHostName);
@@ -73,12 +77,12 @@ protected:
 	/* Methods specific to Paxos algorithm */
 	ddfsClusterMemberPaxos* getLocalNode();
 	ddfsClusterMemberPaxos* getLeader();
-	
+	ddfsClusterMemberPaxos* getMemberByID();
+
 public:
-	ddfsClusterPaxos();
+	ddfsClusterPaxos(string localHostName);
 	~ddfsClusterPaxos();
 	static const int s_clusterIDInvalid = -1;
-	int lastAcceptedProposal;
 	void setLeader(ddfsClusterMemberPaxos* latest_leader, int pr);
 }; // class end
 

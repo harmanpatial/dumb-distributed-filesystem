@@ -19,9 +19,9 @@
 #include <atomic>
 
 #include "ddfs_clusterMember.hpp"
-#include "ddfs_clusterPaxos.hpp"
+//#include "ddfs_clusterPaxos.hpp"
 #include "ddfs_clusterMessagesPaxos.hpp"
-#include "../network/ddfs_udpConnection.hpp"
+#include "../network/ddfs_tcpConnection.hpp"
 #include "../global/ddfs_status.hpp"
 #include "../logger/ddfs_fileLogger.hpp"
 
@@ -52,7 +52,7 @@ enum clusterMemberState {
  * T_memberID = int
  * T_uniqueID = string
  */
-class ddfsClusterMemberPaxos : public ddfsClusterMember<clusterMemberState, int, ddfsClusterMessagePaxos, int, int, ddfsUdpConnection<ddfsClusterMemberPaxos> > {
+class ddfsClusterMemberPaxos : public ddfsClusterMember<clusterMemberState, int, ddfsClusterMessagePaxos, int, int, ddfsTcpConnection<ddfsClusterMemberPaxos> > {
 public:
 	ddfsClusterMemberPaxos();
 
@@ -61,7 +61,7 @@ public:
 	}
 
 	~ddfsClusterMemberPaxos();
-	ddfsStatus init(string hostn);
+	ddfsStatus init(string hostn, ddfsClusterMemberPaxos* localNode);
 	bool isOnline();
 	bool isDead();
 	clusterMemberState getCurrentState();
@@ -80,9 +80,6 @@ public:
 #if 0
     int getLocalSocket();
 #endif
-	int getLastProposal() { return lastProposal; }
-	void setLastProposal(int newProposal) {	lastProposal = newProposal; }
-	
 	ddfsStatus sendClusterMetaData(ddfsClusterMessagePaxos *);
     void processingResponses();
     void callback(void *data, int size);
@@ -95,12 +92,12 @@ private:
 	static const int s_invalid_memberID = -1;
 	/* uniqueIdentifier for using it as Number in Paxos algorithm */
 	/* This is mac address shifted left by 12 bits */
-	uint64_t uniqueIdentification;
+	uint32_t uniqueIdentification;
 
 	/* TODO: Should make it  */
 	std::atomic<clusterMemberState> memberState;
 	/* The network class */
-	ddfsUdpConnection <ddfsClusterMemberPaxos> *network;
+	ddfsTcpConnection <ddfsClusterMemberPaxos> *network;
 	/* Mutex lock for this object */
 	std::mutex clusterMemberLock;
 
@@ -125,7 +122,6 @@ private:
     /* HostName of this cluster member */
     string hostName;
 
-	int lastProposal = -1;
 
     bool isLocalNode() {
         if(hostName.compare("localhost") == 0)

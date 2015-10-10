@@ -1,7 +1,7 @@
 
 CC=g++
-CFLAGS= -c -std=c++11 -Winline -Wall -Werror -pedantic-errors
-LDFLAGS=
+CFLAGS= -g -c -std=c++11 -Winline -Wall -Werror -pedantic-errors -pthread
+LDFLAGS= -fpic # -v
 
 #SOURCES = ddfs_udpConnection.cpp
 SOURCES = 
@@ -15,7 +15,7 @@ OBJS := $(SOURCES:.cpp=.o) $(LIBS)
 
 # To obtain object files
 %.o: %.cpp
-	$(CC) $(CFLAGS) $(LIBS) $< -o $@
+	$(CC) $(LDFLAGS) $(CFLAGS) $(LIBS) $< -o $@
 
 all : $(ECHO) $(OBJS) $(LIBS)
 

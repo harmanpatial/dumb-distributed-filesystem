@@ -1,12 +1,13 @@
 
 CC=g++
-CFLAGS= -c -std=c++11 -Winline -Wall -Werror -pedantic-errors
-LDFLAGS=
+CFLAGS= -g -c -std=c++11 -Winline -Wall -Werror -pedantic-errors -pthread
+LDFLAGS= -fpic #-v
+IMPR = -fno-default-inline -Wctor-dtor-privacy 
 
-SOURCES = ddfs_clusterMessagesPaxos.cpp ddfs_clusterPaxosInstance.cpp ddfs_clusterMemberPaxos.cpp ddfs_clusterPaxos.cpp
-INCLUDE = ddfs_clusterMessagesPaxos.h ddfs_clusterPaxosInstance.h ddfs_cluster.h ddfs_clusterMember.h \
-		  ddfs_clusterMemberPaxos.h ddfs_clusterPaxos.h \
-		  ../logger/ddfs_logger.h ../global/ddfs_status.h
+SOURCES = ddfs_clusterMessagesPaxos.cpp ddfs_clusterPaxos.cpp ddfs_clusterMemberPaxos.cpp ddfs_clusterPaxosInstance.cpp
+INCLUDE = ddfs_clusterMessagesPaxos.hpp ddfs_clusterPaxosInstance.hpp ddfs_cluster.hpp ddfs_clusterMember.hpp \
+		  ddfs_clusterMemberPaxos.hpp ddfs_clusterPaxos.hpp \
+		  ../logger/ddfs_logger.hpp ../global/ddfs_status.hpp
 OBJLIBS	= ../ddfs_cluster.o
 LIBS	= 
 RM	= /bin/rm
@@ -16,7 +17,7 @@ OBJS := $(SOURCES:.cpp=.o) $(LIBS)
 
 # To obtain object files
 %.o: %.cpp
-	$(CC) $(CFLAGS) $(LIBS) $< -o $@
+	$(CC) $(LDFLAGS) $(CFLAGS) $(IMPR) $(LIBS) $< -o $@
 
 all : $(ECHO) $(OBJS) $(LIBS)
 

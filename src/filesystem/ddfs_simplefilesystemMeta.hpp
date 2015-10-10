@@ -103,7 +103,7 @@ private:
 					return 1;
 				}
 			}
-			for (int i = 0; i < temp->children.size(); i++) {
+			for (unsigned int i = 0; i < temp->children.size(); i++) {
 				tempQ.push(temp->children[i]);
 			}
 		}
@@ -323,7 +323,7 @@ public:
 			
 			inMemDirectoryTree.insertNode(temp->offset, temp->fileName);
 			
-			for (int i = 0; i < temp->numberOfFiles; i++) {
+			for (unsigned int i = 0; i < temp->numberOfFiles; i++) {
             	fseek(metaFileHandler, temp->data.directoryData.filesOffset[i], SEEK_SET);
 
 				temp1 = (metaDataBlock *) malloc(sizeof(metaFileHandler));

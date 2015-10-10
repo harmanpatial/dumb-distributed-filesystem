@@ -11,6 +11,8 @@
 
 #include <string>
 #include <arpa/inet.h>
+#include <cstring>
+#include <stdlib.h>
 
 #include "ddfs_clusterMessagesPaxos.hpp"
 #include "../global/ddfs_status.hpp"
@@ -35,6 +37,7 @@ ddfsClusterMessagePaxos::ddfsClusterMessagePaxos() {
 	ddfsHeader.version = 0;
 	ddfsHeader.typeOfService = CLUSTER_MESSAGE_TOF_CLUSTER_UNKNOWN;
 	ddfsHeader.totalLength = 0;
+	memset(&ddfsMessage, 0, sizeof(ddfsClusterMessage));
 	message = (char *)malloc(SIZE_OF_HEADER + MAX_SIZE_OF_MESSAGES);
 }
 
@@ -42,11 +45,13 @@ ddfsClusterMessagePaxos::~ddfsClusterMessagePaxos() {
     free(message);
 }
 
-ddfsStatus ddfsClusterMessagePaxos::addMessage(uint16_t type, uint64_t uuid) {
-	ddfsMessage.messageType = htonl(type);
+ddfsStatus ddfsClusterMessagePaxos::addMessage(uint16_t messageType, uint64_t proposalNumber, uint64_t lastAcceptedProposalNumber, uint64_t lastAcceptedValue) {
+	ddfsMessage.messageType = htonl(messageType);
     ddfsMessage.Reserved1 = htonl(0);
 	/* In case of cluster meta data this is the proposal number */
-	ddfsMessage.uniqueID = htonl(uuid);
+	ddfsMessage.proposalNumber = htonl(proposalNumber);
+	ddfsMessage.lastAcceptedProposalNumber = htonl(lastAcceptedProposalNumber);
+	ddfsMessage.lastAcceptedValue = htonl(lastAcceptedValue);
 
 	ddfsHeader.typeOfService = CLUSTER_MESSAGE_TOF_CLUSTER_MGMT;
 

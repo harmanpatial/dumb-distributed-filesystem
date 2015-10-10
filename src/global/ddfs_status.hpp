@@ -9,7 +9,7 @@
 #define DDFS_STATUS_H
 
 enum DDFS_STATUS {
-    DDFS_OK,
+    DDFS_OK = 0,
     DDFS_HOST_DOWN,
     DDFS_NETWORK_NO_DATA,
     DDFS_NETWORK_RETRY,
@@ -22,6 +22,14 @@ enum DDFS_STATUS {
     DDFS_FILESYSTEM_FILE_PERMISSIONS_DENIED,
     DDFS_FILESYSTEM_CORRUPTED,
     DDFS_FAILURE
+};
+
+class red {
+	int value;
+public:
+	red() { value = 1; }
+	int getV() { return value; }
+	int initialize();
 };
 
 class ddfsStatus {

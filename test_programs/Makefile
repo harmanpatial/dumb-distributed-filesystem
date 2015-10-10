@@ -1,9 +1,10 @@
 
 CC=g++
-CFLAGS= 
+CFLAGS= -std=c++11
+#-fpic -- This is only required to build shared library 
 
-INCLUDE = 
-LIBS	= -L. -lddfs
+INCLUDE = -I/home/harman/ddfs/src/global/
+LIBS	= -L/usr/local/lib/ -lddfs
 RM	= /bin/rm
 
 # Objs are all the sources, with .cpp replaced by .o

@@ -35,7 +35,7 @@ using std::list;
  */
 template <typename T_ddfsClusterMember, typename T_ddfsMemberIdentification = int>
 class ddfsCluster {
-protected:
+public:
 	int clusterID;
 	list<T_ddfsClusterMember> clusterMembers;
 	uint64_t paxosProposalNumber;
@@ -48,14 +48,14 @@ protected:
     *
     *  \return      void
     *
-    *  \note        This is what would handle to cluster data.
+    *  \note        This is what would handle cluster data.
     *               All the data is of a specific format.
     */
     virtual void asyncEventHandling(void *buffer, int bufferCount) = 0;
     virtual ddfsStatus addMember(T_ddfsMemberIdentification) = 0;
     virtual ddfsStatus addMembers() = 0;
-    virtual ddfsStatus deleteMember(T_ddfsMemberIdentification) = 0;
-    virtual ddfsStatus deleteMembers() = 0;
+    virtual ddfsStatus removeMember(T_ddfsMemberIdentification) = 0;
+    virtual ddfsStatus removeMembers() = 0;
 public:
 	static const int s_clusterIDInvalid = -1;
 	ddfsCluster() {}

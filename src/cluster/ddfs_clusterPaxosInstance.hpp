@@ -20,13 +20,28 @@
 #ifndef DDFS_CLUSTER_PAXOS_INSTANCE_H
 #define DDFS_CLUSTER_PAXOS_INSTANCE_H
 
+#include <vector>
 
-#include "ddfs_clusterPaxos.hpp"
+//#include "ddfs_clusterPaxos.hpp"
 #include "ddfs_clusterMemberPaxos.hpp"
 #include "ddfs_clusterMessagesPaxos.hpp"
 
 #include "../global/ddfs_status.hpp"
 #include "../logger/ddfs_fileLogger.hpp"
+
+using namespace std;
+
+enum paxosState {
+	/*  Paxos Instance state Leader Election.
+	 */
+    s_paxosState_NONE = 0,
+	s_paxosState_PREPARE,
+	s_paxosState_PROMISE_RECV, /* Remote Node promised local node */
+	s_paxosState_PROMISED, /* Local Node promised remote node */
+	s_paxosState_ACCEPT_REQUESTED,
+	s_paxosState_REQUEST_ACCEPTED,	/* Remote Node accepted request from Local Node */
+    s_paxosState_COMPLETED,
+};
 
 /*!
  *  \class  ddfs_clusterPaxosInstance
@@ -46,13 +61,25 @@ class ddfsClusterPaxosInstance
 		~ddfsClusterPaxosInstance ();                            /* destructor */    
 
 		/* ====================  ACCESSORS     ======================================= */
-		ddfsStatus execute(uint64_t proposalNumber, vector <ddfsClusterMemberPaxos *>& participatingMembers);
-		ddfsStatus executeAsync(uint64_t proposalNumber, vector <ddfsClusterMemberPaxos *>& participatingMembers, ddfsClusterPaxos& cluster);
+		ddfsStatus execute(uint64_t proposalNumber, uint64_t value, vector <ddfsClusterMemberPaxos *>& allMembers, int *consesusValue);
+		//ddfsStatus executeAsync(uint64_t proposalNumber, vector <ddfsClusterMemberPaxos *>& participatingMembers, ddfsClusterPaxos& cluster);
 		/* ====================  MUTATORS      ======================================= */
 		void abandon();
 		/* ====================  OPERATORS     ======================================= */
 
 		ddfsClusterPaxosInstance& operator = ( const ddfsClusterPaxosInstance &other ); /* assignment operator */
+
+		paxosState getState() {
+			return state;
+		}
+
+		int getLastPromised() { return lastPromised; }
+		void setLastPromised(int newV) { lastPromised = newV; }
+		int getLastAcceptedProposalNumber() { return lastAcceptedProposalNumber; }
+		void setLastAcceptedProposalNumber(int newV) { lastAcceptedProposalNumber = newV; }
+		int getLastAcceptedValue() { return lastAcceptedValue; }
+		void setLastAcceptedValue(int newV) { lastAcceptedValue = newV; }
+		void incrementResponses() { responses++; }
 
 	protected:
 		/* ====================  METHODS       ======================================= */
@@ -68,7 +95,14 @@ class ddfsClusterPaxosInstance
 
 		/* ====================  DATA MEMBERS  ======================================= */
 		int internalProposalNumber;
+        paxosState state;
+        int quorum;
+        int responses;
 //		list <ddfsClusterMemberPaxos>& participatingMembers;
+		int lastPromised;
+		int lastAcceptedProposalNumber;
+		int lastAcceptedValue;
+		int currentVersionNumber;
 
 }; /* -----  end of class ddfsClusterPaxosInstance  ----- */
 

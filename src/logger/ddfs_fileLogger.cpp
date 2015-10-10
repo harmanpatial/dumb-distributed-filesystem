@@ -13,6 +13,7 @@
 
 #include <fstream>
 #include <time.h>
+#include <iostream>
 
 #include "ddfs_fileLogger.hpp"
 
@@ -59,11 +60,13 @@ ddfsLogger &operator << (ddfsLogger &logger, const ddfsLogger::e_logType l_type)
 // No need for std::string objects here
 ddfsLogger &operator << (ddfsLogger &logger, string text) {
 	logger.myFile << text;
+    logger.myFile.flush();
 	return logger;
 }
 
 ddfsLogger &operator << (ddfsLogger &logger, int int_value) {
 	logger.myFile << int_value;
+    logger.myFile.flush();
 	return logger;
 }
 

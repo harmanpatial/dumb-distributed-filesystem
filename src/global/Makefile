@@ -1,10 +1,12 @@
 
 CC=g++
-CFLAGS=-c -std=c++11 -Winline -Wall -Werror -pedantic-errors
-LDFLAGS=
+CFLAGS=-g -c -std=c++11 -Winline -Wall -Werror -pedantic-errors -pthread
+LDFLAGS= -fpic # -v
+IMPR = -fno-default-inline -Wctor-dtor-privacy
 
 SOURCES = ddfs_status.cpp ddfs_global.cpp
-INCLUDE = ddfs_status.h ddfs_global.h ../logger/ddfs_logger.h ../cluster/ddfs_cluster.h
+INCLUDE = -I. -I../logger/
+INCLUDE_FILES = -Iddfs_global.hpp  -Iddfs_status.hpp -I../logger/ddfs_logger.hpp -I../cluster/ddfs_cluster.hpp
 OBJLIBS	= ../ddfs_global.o
 LIBS	= 
 RM	= /bin/rm
@@ -13,8 +15,11 @@ RM	= /bin/rm
 OBJS := $(SOURCES:.cpp=.o) $(LIBS)
 
 # To obtain object files
+#%.o: %.cpp
+#	$(CC) $(LDFLAGS) $(CFLAGS) $(IMPR) $(INCLUDE) $(LIBS) $< -o $@
+
 %.o: %.cpp
-	$(CC) $(CFLAGS) $(LIBS) $< -o $@
+	$(CC) $(LDFLAGS) $(CFLAGS) -c $<
 
 all : $(ECHO) $(OBJS) $(LIBS)
 

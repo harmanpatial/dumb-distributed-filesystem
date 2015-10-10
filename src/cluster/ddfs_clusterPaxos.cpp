@@ -25,15 +25,14 @@
 
 ddfsLogger &global_logger_cp = ddfsLogger::getInstance();
  
-ddfsClusterPaxos::ddfsClusterPaxos() {
+ddfsClusterPaxos::ddfsClusterPaxos(string localHostName) {
 	clusterID = s_clusterIDInvalid;
 	clusterMemberCount = 1; /* 1 for the local Node */
-	paxosProposalNumber = 
-		getLocalNode()->getUniqueIdentification();
+	paxosProposalNumber = 0;
 
 	localClusterMember = new ddfsClusterMemberPaxos();
     /* Initialize the local node */
-    localClusterMember->init("localhost");
+    localClusterMember->init(localHostName, NULL);
 	return;
 }
 
@@ -48,17 +47,18 @@ uint64_t ddfsClusterPaxos::getProposalNumber() {
         paxosProposalNumber = 1;
     }
 	
-    return ((paxosProposalNumber << 32) | clusterMemberID);
+	return ((paxosProposalNumber << 32) | getLocalNode()->getUniqueIdentification());
+    //return ((paxosProposalNumber << 32) | clusterMemberID);
 }
 
 ddfsStatus ddfsClusterPaxos::leaderElection() {
 	vector<ddfsClusterMemberPaxos *>::iterator clusterMemberIter;
 	vector<ddfsClusterMemberPaxos *> members;
     uint8_t retryCount = s_retryCountLE;
-    bool leaderElectioncomp = false;
+    bool leaderElectionCompleted = false;
 	ddfsStatus status(DDFS_FAILURE);
 	
-    while(leaderElectioncomp == false) {
+    while(leaderElectionCompleted == false) {
 
         /* Remove all the elements from the list */
         members.clear();
@@ -68,31 +68,21 @@ ddfsStatus ddfsClusterPaxos::leaderElection() {
         if(clusterMemberCount == 1) {
             global_logger_cp << ddfsLogger::LOG_INFO
                 << "Only one node in the cluster. Making localnode leader.";
-			// TODO : Make local node as leader.
+			// Make local node as leader.
 			setLeader(getLocalNode(), 1);
 			
             return (ddfsStatus(DDFS_CLUSTER_INSUFFICIENT_NODES));
         }
 
-        /* Push all the online members of the cluster to a local list */
-        for(clusterMemberIter = clusterMembers.begin(); clusterMemberIter != clusterMembers.end(); clusterMemberIter++) {
-            if((*clusterMemberIter)->isOnline() == false) {
-                global_logger_cp << ddfsLogger::LOG_WARNING << "Node " << (*clusterMemberIter)->getUniqueIdentification() << " is offline";
-            }
-            /* Push this member to the local members list. */
-            members.push_back(*clusterMemberIter);
-        }
-
         /*  Create a ddfsClusterPaxosInstance instance and let it rip
          *  
-         *  NOTE : As this is leader election paxos instance, there is no need
-         *  	   for async completion.
+         *  NOTE : As this is leader election paxos instance, there is a
+         *         sync. completion.
          */
-        ddfsClusterPaxosInstance paxosInstance; 
-
         /* Execute the Paxos Instance */
 		int pr = getProposalNumber();
-        status = paxosInstance.execute(pr, members);
+		int newLeader = -1;
+        status = paxosInstance.execute(pr, localClusterMember->getMemberID(), members, &newLeader);
         if(status.compareStatus(ddfsStatus(DDFS_OK)) == false) {
 			int timeout = 0;
 
@@ -113,12 +103,15 @@ ddfsStatus ddfsClusterPaxos::leaderElection() {
             }
                 
         } else {
-			setLeader(getLocalNode(), pr);
-            leaderElectioncomp = true;
+			/* TODO: Set node with uid of newLeader as the leader */
+			//setLeader(getLocalNode(), pr);
+			global_logger_cp << ddfsLogger::LOG_WARNING << "********* LE : SELECTED : "
+                   << newLeader << " *********";
+            leaderElectionCompleted = true;
         }
     }
 
-	if(leaderElectioncomp == true)
+	if(leaderElectionCompleted == true)
 		global_logger_cp << ddfsLogger::LOG_WARNING << "LEADER ELECTION SUCCESSFULL.";
 	else
 		global_logger_cp << ddfsLogger::LOG_WARNING << "FAILED LEADER ELECTION.";
@@ -131,11 +124,106 @@ void ddfsClusterPaxos::asyncEventHandling(void *buffer, int bufferCount) {
 
 }
 
+ddfsStatus ddfsClusterPaxos::processMessage (ddfsClusterMemberPaxos *member, ddfsClusterMessage *message) {
+
+    if((paxosInstance.getState() == s_paxosState_NONE) || (paxosInstance.getState() == s_paxosState_COMPLETED)) {
+		global_logger_cp << ddfsLogger::LOG_INFO
+					<< "ddfsClusterMemberPaxos:: Dropping the message.";
+		return (ddfsStatus(DDFS_OK));
+	}
+
+    
+    global_logger_cp << ddfsLogger::LOG_INFO
+                    << "ddfsClusterMemberPaxos:: recieved message type :" << message->messageType << "\n";
+	switch (message->messageType) {
+		case CLUSTER_MESSAGE_LE_TYPE_PREPARE:
+		{
+            if(paxosInstance.getLastPromised() < message->proposalNumber) {
+                /* Accept the proposal value */
+                paxosInstance.setLastPromised(message->proposalNumber);
+			}
+            /* Send the Promise message across */
+            ddfsClusterMessagePaxos reply = ddfsClusterMessagePaxos();
+
+			//setCurrentState(s_clusterMemberPaxos_LE_PROMISED);
+			reply.addMessage(CLUSTER_MESSAGE_LE_TYPE_PROMISE, paxosInstance.getLastPromised(),
+                    paxosInstance.getLastAcceptedProposalNumber(), paxosInstance.getLastAcceptedValue());
+			member->sendClusterMetaData(&reply);
+			break;
+		}
+		case CLUSTER_MESSAGE_LE_TYPE_PROMISE:
+		{
+			if((paxosInstance.getState() == s_paxosState_PREPARE) && (paxosInstance.getLastPromised() == message->proposalNumber))
+                    paxosInstance.incrementResponses();
+            /*  This is considered vote <lastAcceptedProposalNumber, lastAcceptedProposalNumber> */
+            if((message->lastAcceptedProposalNumber != 0) && (message->lastAcceptedProposalNumber > paxosInstance.getLastAcceptedProposalNumber())) {
+                paxosInstance.setLastAcceptedProposalNumber(message->lastAcceptedProposalNumber);
+                paxosInstance.setLastAcceptedValue(message->lastAcceptedValue);
+            }
+			break;
+		}
+		case CLUSTER_MESSAGE_LE_ACCEPT_REQUESTED:
+		{	
+			//if((paxosInstance.getCurrentState() == s_clusterMemberPaxos_LE_PROMISED) && (lastProposal == message->proposalNumber)) {
+			if(paxosInstance.getLastPromised() == message->proposalNumber) {
+				/* Send the Accepted message across */
+				ddfsClusterMessagePaxos reply = ddfsClusterMessagePaxos();
+				reply.addMessage(CLUSTER_MESSAGE_LE_ACCEPTED, paxosInstance.getLastPromised(),
+                        paxosInstance.getLastAcceptedProposalNumber(), paxosInstance.getLastAcceptedValue());
+				//setCurrentState(s_clusterMemberPaxos_LE_ACCEPTED);
+				member->sendClusterMetaData(&reply);
+			}
+			break;
+		}
+		case CLUSTER_MESSAGE_LE_ACCEPTED:
+		{	
+			if(paxosInstance.getLastAcceptedProposalNumber() == message->lastAcceptedProposalNumber)
+                    paxosInstance.incrementResponses();
+				//setCurrentState(s_clusterMemberPaxos_LE_COMPLETE);
+			break;
+		}
+		case CLUSTER_MESSAGE_LE_LEADER_ELECTED:
+		{	
+			//setCurrentState(s_clusterMemberPaxos_LEADER);
+			// TODO: Get the unique id of the newly elected leader from the message.
+			// 		 and then set it as the leader.
+			//setLeader(this, message->proposalNumber);
+			break;
+		}
+		default:
+		{
+			/* Case : Default */
+			global_logger_cp << ddfsLogger::LOG_ERROR
+				<< "ddfsClusterMemberPaxos :: Message type is incorrect.\n";
+			
+			break;
+		}
+	}
+
+#if 0
+	if(message->messageType == CLUSTER_MESSAGE_LE_TYPE_PREPARE) {
+		}
+	} else if(message->messageType == CLUSTER_MESSAGE_LE_TYPE_PROMISE) {
+
+	} else if(message->messageType == CLUSTER_MESSAGE_LE_ACCEPT_REQUESTED) {
+
+	} else if(message->messageType == CLUSTER_MESSAGE_LE_ACCEPTED) {
+
+	}
+#endif
+	return (ddfsStatus(DDFS_OK));
+
+}
+
 ddfsStatus ddfsClusterPaxos::addMember(string newHostName) {
     
     vector<ddfsClusterMemberPaxos *>::iterator clusterMemberIter;
     
+    global_logger_cp << ddfsLogger::LOG_WARNING << "Add Member Node.\n";
+
     for(clusterMemberIter = clusterMembers.begin(); clusterMemberIter != clusterMembers.end(); clusterMemberIter++) {
+            global_logger_cp << ddfsLogger::LOG_INFO << "host Name : " << (*clusterMemberIter)->getHostName();
+            continue;
             if((*clusterMemberIter)->getHostName().compare(newHostName) == 0) {
                 global_logger_cp << ddfsLogger::LOG_WARNING << "Node "
                                 << (*clusterMemberIter)->getUniqueIdentification()
@@ -144,13 +232,21 @@ ddfsStatus ddfsClusterPaxos::addMember(string newHostName) {
             }
     }
 
+
     /* NOTE : This would always be a remote node.
      *        Local node is added during ClusterPaxos class
      *        initialization.
      */
-    ddfsClusterMemberPaxos *newMember = new ddfsClusterMemberPaxos();
+	
+	global_logger_cp << ddfsLogger::LOG_INFO << "CLUSTER :: Adding host, "
+					<< newHostName << ", to the cluster\n";
 
-    newMember->init(newHostName);
+    ddfsClusterMemberPaxos *newMember = new ddfsClusterMemberPaxos(this);
+
+    newMember->init(newHostName, getLocalNode());
+
+	return (ddfsStatus(DDFS_OK));
+
     clusterMembers.push_back(newMember);
     clusterMemberCount++;
 	return (ddfsStatus(DDFS_OK));
@@ -176,9 +272,10 @@ ddfsStatus ddfsClusterPaxos::removeMember(string removeHostName) {
 				clusterMemberIter++;
     }
 
-    delete(deletedMember);
-    clusterMemberCount--;
-
+	if(exists == true) {
+    	delete(deletedMember);
+	    clusterMemberCount--;
+	}
 	return (ddfsStatus(DDFS_OK));
 }
 
@@ -197,7 +294,7 @@ void ddfsClusterPaxos::setLeader(ddfsClusterMemberPaxos* latest_leader, int pr) 
 	ddfsClusterMessagePaxos message = ddfsClusterMessagePaxos();
 
 	leaderClusterMember = latest_leader;
-	message.addMessage(CLUSTER_MESSAGE_LE_LEADER_ELECTED, pr);
+	message.addMessage(CLUSTER_MESSAGE_LE_LEADER_ELECTED, pr, 0, 0);
 
 	for(iter = clusterMembers.begin(); iter != clusterMembers.end(); iter++) {
 		(*iter)->sendClusterMetaData(&message);

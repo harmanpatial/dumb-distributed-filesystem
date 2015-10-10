@@ -11,7 +11,7 @@
 #include <string>
 
 #include "ddfs_global.hpp"
-#include "./../cluster/ddfs_clusterPaxos.hpp"
+//#include "./../cluster/ddfs_clusterPaxos.hpp"
 
 ddfsLogger& ddfsGlobal::global_logger = ddfsLogger::getInstance();
 int ddfsGlobal::initialization_done = 0;

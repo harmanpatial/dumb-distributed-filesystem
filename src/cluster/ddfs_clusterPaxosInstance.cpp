@@ -17,23 +17,67 @@
 #include <unistd.h>
 
 #include "ddfs_clusterPaxosInstance.hpp"
+#include "../logger/ddfs_fileLogger.hpp"
+
+using namespace std;
 
 ddfsLogger &global_logger_cpi = ddfsLogger::getInstance();
 
 ddfsClusterPaxosInstance::ddfsClusterPaxosInstance () {
 	internalProposalNumber = -1;
+    state = s_paxosState_NONE;
+    quorum = 0;
+    responses = 0;
+
+    lastPromised = -1;
+    lastAcceptedProposalNumber = -1;
+    lastAcceptedValue = -1;
+    currentVersionNumber = -1;
+
 }
 
 ddfsClusterPaxosInstance::~ddfsClusterPaxosInstance () {}
 
-ddfsStatus ddfsClusterPaxosInstance::execute (uint64_t proposalNumber, vector<ddfsClusterMemberPaxos *>& participatingMembers)
+ddfsStatus ddfsClusterPaxosInstance::execute (uint64_t proposalNumber, uint64_t value, vector<ddfsClusterMemberPaxos *>& allMembers, int *consensusValue)
 {
+    vector<ddfsClusterMemberPaxos *> participatingMembers;
 	vector<ddfsClusterMemberPaxos *>::iterator clusterMemberIter;
 	ddfsClusterMessagePaxos message = ddfsClusterMessagePaxos();
 	int clusterQuorum = (participatingMembers.size()+1)/s_quorum;
-	int currentCount = 0;
 
 	internalProposalNumber = proposalNumber;	
+
+	if(state != s_paxosState_COMPLETED || state != s_paxosState_NONE)
+        return (ddfsStatus(DDFS_FAILURE));
+
+    unsigned int quorum = (allMembers.size()/2) + 1;
+    int count = 0;
+    srand(time(NULL));
+
+    /* Push only the quorum members of the cluster to a local list */
+    for(clusterMemberIter = allMembers.begin(); clusterMemberIter != allMembers.end(); clusterMemberIter++) {
+        if((*clusterMemberIter)->isOnline() == false) {
+            global_logger_cpi << ddfsLogger::LOG_WARNING << "Node " << (*clusterMemberIter)->getUniqueIdentification() << " is offline";
+            count++;
+            continue;
+        }
+        participatingMembers.push_back(*clusterMemberIter);
+
+        if(participatingMembers.size() == quorum)
+            continue;
+
+        /* Choosing members randomly, untill we cannot */
+        if((rand()%2) || ((allMembers.size() - count) == (quorum -  participatingMembers.size())))
+            participatingMembers.push_back(*clusterMemberIter);
+
+        count++;
+    }
+
+
+    if(participatingMembers.size() < quorum)
+        return (ddfsStatus(DDFS_CLUSTER_INSUFFICIENT_NODES));
+
+
 
 	/* Start the leader Election */
 	/* Algorithm is straight formward.
@@ -42,22 +86,30 @@ ddfsStatus ddfsClusterPaxosInstance::execute (uint64_t proposalNumber, vector<dd
 	 * Phase 1b: Promise
 	 * Phase 2a: Accept Request
 	 * Phase 2b: Accepted
+	 *
+	 * Phase 3: Commit - Commit the consensus that has been just reached.
 	 */
 	while (1) {
 		/*  Send a Prepare cluster message to be send to all the nodes in the cluster.
 		 *  Promise cluster message should arrive for all the cluster members or atleast majority of cluster members.
 		 */
+        global_logger_cpi << ddfsLogger::LOG_INFO
+            << "Paxos :: Prepare :: " << internalProposalNumber;
+
 		for(clusterMemberIter = participatingMembers.begin(); clusterMemberIter != participatingMembers.end(); clusterMemberIter++) {
 			if( (*clusterMemberIter)->isOnline() == false) {
 				global_logger_cpi << ddfsLogger::LOG_WARNING << "Node " << (*clusterMemberIter)->getUniqueIdentification() << " is offline";
 			}
 
 			/* Create packet for the PAXOS Prepare request and send it to the choosen node */
-			message.addMessage(CLUSTER_MESSAGE_LE_TYPE_PREPARE, internalProposalNumber);
+			message.addMessage(CLUSTER_MESSAGE_LE_TYPE_PREPARE, internalProposalNumber, 0, 0);
 			(*clusterMemberIter)->sendClusterMetaData(&message);
-			(*clusterMemberIter)->setCurrentState(s_clusterMemberPaxos_LE_PREPARE);
-			(*clusterMemberIter)->setLastProposal(internalProposalNumber);
+			state = s_paxosState_PREPARE;
+			//(*clusterMemberIter)->setCurrentState(s_clusterMemberPaxos_LE_PREPARE);
+			//(*clusterMemberIter)->setLastProposal(internalProposalNumber);
 		}
+
+        lastPromised = internalProposalNumber;
 
 		/*  Wait for the Promise response from Quorum */
 		sleep(s_timeout);
@@ -71,19 +123,21 @@ ddfsStatus ddfsClusterPaxosInstance::execute (uint64_t proposalNumber, vector<dd
 		 *  	  that AgreedUponValue should be used in the ACCEPT Request and not the local
 		 *  	  node's id.
 		 */
-		for(clusterMemberIter = participatingMembers.begin(); clusterMemberIter != participatingMembers.end(); clusterMemberIter++) {
-			if(internalProposalNumber != (*clusterMemberIter)->getLastProposal()) {
-				global_logger_cpi << ddfsLogger::LOG_ERROR
-					<< "ddfsclusterPaxosInstance :: A higher proposal Number exists.\n";	
-				currentCount = 0;
-				break;
-			}
-			if((*clusterMemberIter)->getCurrentState() == s_clusterMemberPaxos_LE_PROMISE_RECV)
-				currentCount++;
+
+		if(responses < clusterQuorum) {
+        	global_logger_cpi << ddfsLogger::LOG_INFO
+            	<< "Paxos :: Exit after Prepare :: " << responses;
+			return (ddfsStatus(DDFS_FAILURE));
 		}
 
-		if(currentCount < clusterQuorum)
-			return (ddfsStatus(DDFS_FAILURE));
+        global_logger_cpi << ddfsLogger::LOG_INFO
+            << "Paxos :: Accept :: " << internalProposalNumber;
+
+        lastAcceptedProposalNumber = internalProposalNumber;
+		responses = 0;
+
+        if(lastAcceptedValue == 0)
+            lastAcceptedValue = value;
 
 		/* Send the accept request to the nodes */
 		/* TODO: Should only send the accept request to the set of nodes that responded 
@@ -91,27 +145,33 @@ ddfsStatus ddfsClusterPaxosInstance::execute (uint64_t proposalNumber, vector<dd
 		 * This is what protocol dictates. SHOULD STRICTLY FOLLOW THE PROTOCOL.
 		 */
 		for(clusterMemberIter = participatingMembers.begin(); clusterMemberIter != participatingMembers.end(); clusterMemberIter++) {
-			if((*clusterMemberIter)->getCurrentState() == s_clusterMemberPaxos_LE_PROMISE_RECV) {
-				/* Create packet for the "Accept Request" request and send it to the choosen node */
-				message.addMessage(CLUSTER_MESSAGE_LE_ACCEPT_REQUESTED, internalProposalNumber);
-				(*clusterMemberIter)->sendClusterMetaData(&message);
-				(*clusterMemberIter)->setCurrentState(s_clusterMemberPaxos_LE_ACCEPT_REQUESTED);
-			}
+            /* Create packet for the "Accept Request" request and send it to the choosen node */
+			message.addMessage(CLUSTER_MESSAGE_LE_ACCEPT_REQUESTED, internalProposalNumber, lastAcceptedProposalNumber, lastAcceptedValue);
+			(*clusterMemberIter)->sendClusterMetaData(&message);
+			(*clusterMemberIter)->setCurrentState(s_clusterMemberPaxos_LE_ACCEPT_REQUESTED);
 		}
 		
 		/*  Wait for the Accept response from Quorum */
 		sleep(s_timeout);
 
-		currentCount = 0;
-
-		/*  Check the status of this instance of paxos algorithm */
-		for(clusterMemberIter = participatingMembers.begin(); clusterMemberIter != participatingMembers.end(); clusterMemberIter++) {
-			if((*clusterMemberIter)->getCurrentState() == s_clusterMemberPaxos_LE_ACCEPTED)
-				currentCount++;
+		if(responses < clusterQuorum) {
+        	global_logger_cpi << ddfsLogger::LOG_INFO
+            	<< "Paxos :: Exit after Prepare :: " << responses;
+			return (ddfsStatus(DDFS_FAILURE));
 		}
 
-		if(currentCount < clusterQuorum)
-			return (ddfsStatus(DDFS_FAILURE));
+        global_logger_cpi << ddfsLogger::LOG_INFO
+            << "Paxos :: Commit :: " << internalProposalNumber;
+
+        /* Commit */
+		for(clusterMemberIter = allMembers.begin(); clusterMemberIter != participatingMembers.end(); clusterMemberIter++) {
+            message.addMessage(CLUSTER_MESSAGE_LE_LEADER_ELECTED, internalProposalNumber, 0, lastAcceptedValue);
+            (*clusterMemberIter)->sendClusterMetaData(&message);
+        }
+
+		state = s_paxosState_COMPLETED;
+
+        *consensusValue = lastAcceptedValue;
 
 		/* This instance has successfully completed. */
 		return (ddfsStatus(DDFS_OK));
@@ -121,9 +181,11 @@ ddfsStatus ddfsClusterPaxosInstance::execute (uint64_t proposalNumber, vector<dd
 	return (ddfsStatus(DDFS_FAILURE));
 }		/* -----  end of method ddfsClusterPaxosInstance::execute  ----- */
 
+#if 0
 ddfsStatus executeAsync(uint64_t proposalNumber, list <ddfsClusterMemberPaxos *>& participatingMembers, ddfsClusterPaxos& cluster) {
 	return (ddfsStatus(DDFS_FAILURE));
 }		/* -----  end of method ddfsClusterPaxosInstance::executeAsync  ----- */
+#endif
 
 void ddfsClusterPaxosInstance::abandon()
 {
