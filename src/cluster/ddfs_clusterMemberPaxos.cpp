@@ -54,11 +54,10 @@ ddfsStatus ddfsClusterMemberPaxos::init(string hostn, ddfsClusterMemberPaxos *lo
     global_logger_cmp << ddfsLogger::LOG_INFO
                         << "clusterMemberPaxos :: Opening the network connection.\n";
 
-    /*   TODO : Only connect to the remote IP server port if localIP < remoteIP,
-     *          else it is the responsibility of the remote IP to connect to my
-     *          DDFS_SERVER_PORT.
+    /*  Only connect to the remote IP server port if localIP < remoteIP,
+     *  else it is the responsibility of the remote IP to connect to my
+     *  DDFS_SERVER_PORT.
      */
-
     bool doNotConnect = false;
     
     if(localNode != NULL) {
@@ -75,12 +74,10 @@ ddfsStatus ddfsClusterMemberPaxos::init(string hostn, ddfsClusterMemberPaxos *lo
     }
 
     /*  Initialize the underline network class */
-    if(doNotConnect == false) {
-        if(!localNode)
-            status = network->openConnection("localhost");
-        else
-            status = network->openConnection(hostName);
-    }
+    if(!localNode)
+        status = network->openConnection("localhost", doNotConnect);
+    else
+        status = network->openConnection(hostName, doNotConnect);
 
     if(status.compareStatus(ddfsStatus(DDFS_OK)) == false) {
         global_logger_cmp << ddfsLogger::LOG_WARNING
@@ -102,7 +99,8 @@ ddfsStatus ddfsClusterMemberPaxos::init(string hostn, ddfsClusterMemberPaxos *lo
     //workingThreadQ.push_back(std::thread(&ddfsClusterMemberPaxos::processingResponses, this));
 
     /* Subscribe to the response queue */
-    status = network->subscribe(this, networkPrivatePtr);
+    if(localNode)
+        status = network->subscribe(this, networkPrivatePtr);
 
     if(status.compareStatus(ddfsStatus(DDFS_OK)) == false) {
         global_logger_cmp << ddfsLogger::LOG_WARNING
@@ -110,18 +108,36 @@ ddfsStatus ddfsClusterMemberPaxos::init(string hostn, ddfsClusterMemberPaxos *lo
         return status;
     }
 
-    if(getHostName().compare("localhost") && 0) {
-        global_logger_cmp << ddfsLogger::LOG_INFO
-                << "Sending a test packet to " << getHostName() << "\n";
+#if 0
 
-        std::string s("DDFS Destination Node : ");
-        s.append(getHostName());
-        network->sendData((void *)s.c_str(), s.size(), networkPrivatePtr);
+    if(localNode) {
+        while(1) {
+            sleep(2);
+            status = network->checkConnection();
+
+            if(status.compareStatus(ddfsStatus(DDFS_OK)) == false) {
+                global_logger_cmp << ddfsLogger::LOG_INFO
+                        << "Check Connection failed for host : " << hostn << "\n";
+            } else {
+                global_logger_cmp << ddfsLogger::LOG_INFO
+                        << "Connection is now established with : " << hostn << "\n";
+
+                /* TODO : Test code */
+                if(getHostName().compare("localhost")) {
+                    global_logger_cmp << ddfsLogger::LOG_INFO
+                        << "Sending a test packet to " << getHostName() << "\n";
+
+                    std::string s("DDFS Destination Node : ");
+                    s.append(getHostName());
+                    s.append(" Request ");
+                    network->sendData((void *)s.c_str(), s.size(), networkPrivatePtr);
+                }
+                break;
+            }
+        }
     }
+#endif
 
-    /* Incase this instance is of localNode, 
-     * now it's ready to exchange DDFS packages
-     */
     return (ddfsStatus(DDFS_OK));
 }
 
@@ -262,6 +278,15 @@ void ddfsClusterMemberPaxos::processingResponses() {
             /* If this is a packet for the paxos iteration, network class should
              * handle this internally.
              */
+
+#if 0
+            global_logger_cmp << ddfsLogger::LOG_INFO
+                            << "This is the message received from " << getHostName << " : "
+                            << entry->data[0] << entry->data[1] << entry->data[2] << entry->data[3]
+                            << entry->data[4] << entry->data[5] << entry->data[6] << entry->data[7]
+                            << entry->data[8] << entry->data[9] << entry->data[10] << entry->data[11]
+                            << entry->data[12] << entry->data[13] << entry->data[14] << entry->data[15] << "\n";
+#endif            
             if(entry->typeOfService == CLUSTER_MESSAGE_TOF_CLUSTER_MGMT) {
                 numberOfDdfsMessages = ((entry->totalLength)-sizeof(ddfsClusterHeader))/sizeof(ddfsClusterMessage);
 

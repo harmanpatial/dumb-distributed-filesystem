@@ -21,15 +21,26 @@ int main(int argc, const char *argv[])
 
 	ddfsGlobal::initialize();
 
-	ddfsClusterPaxos *cluster = new ddfsClusterPaxos("192.168.2.14");
+	ddfsClusterPaxos *cluster = new ddfsClusterPaxos("192.168.2.16");
 
 	cout << "Sleeping for three seconds.\n";
 	sleep(3);
 	cout << "Trying to add dd1 \n";
 	cluster->addMember("192.168.2.15");
 
-    cout << "Trying to add dd3 \n";
-    cluster->addMember("192.168.2.16");
+    cout << "Trying to add dd2 \n";
+    cluster->addMember("192.168.2.14");
+
+    cout << "Sleeping for 5 seconds.\n";
+	sleep(5);
+
+	cout << "Starting the leader election : \n";
+	status = cluster->leaderElection();
+
+	if(status.compareStatus(ddfsStatus(DDFS_OK)) == true)
+		cout << "Leader Election Successfully Completed.\n";
+	else
+		cout << "Leader Election failed.\n";
 
 #if 0
 	cout << "Trying to add testNode-2 \n";

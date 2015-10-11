@@ -122,7 +122,6 @@ private:
     /* HostName of this cluster member */
     string hostName;
 
-
     bool isLocalNode() {
         if(hostName.compare("localhost") == 0)
             return true;
