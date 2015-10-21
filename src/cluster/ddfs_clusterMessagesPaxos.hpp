@@ -105,11 +105,11 @@ typedef struct {
 
 /*  Packet cluster message */
 typedef struct {
-    uint16_t messageType;	/* 2 bytes -- enum clusterMessageType */
-    uint16_t Reserved1;
-    int64_t proposalNumber;
-    int64_t lastAcceptedProposalNumber;
-	int64_t lastAcceptedValue;			/* This is value that needs to be send in Promise and Accept Command. */
+    uint16_t messageType;	            /* 2 bytes -- enum clusterMessageType */
+    uint16_t Reserved1;                 /* 2 bytes */
+    int64_t proposalNumber;             /* 4 bytes */
+    int64_t lastAcceptedProposalNumber; /* 4 bytes */
+	int64_t lastAcceptedValue;			/* 4 bytes This is value that needs to be send in Promise and Accept Command. */
 } __attribute__((packed)) ddfsClusterMessage;
 
 /*  Packet data message */
@@ -127,6 +127,7 @@ typedef struct {
 
 #define MAX_REQUEST_SIZE	256
 
+/* TODO: Not see any usage of this */
 typedef struct {
     uint8_t typeOfService;
     uint16_t totalLength;
@@ -161,7 +162,7 @@ public:
 	ddfsClusterMessagePaxos();
 	~ddfsClusterMessagePaxos();
 	virtual ddfsStatus addMessage(uint16_t messageType, uint64_t proposalNumber, uint64_t lastAcceptedProposalNumber, uint64_t lastAcceptedValue);
-	virtual void * returnBuffer();
+	virtual void returnBuffer(void *);
 	uint64_t returnBufferSize();
 };
 

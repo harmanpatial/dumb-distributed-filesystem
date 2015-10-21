@@ -124,7 +124,7 @@ public:
         isNodeLocal = false;
 
         /* Pre allocating memory for storing the header */
-        bzero(tempBuffer, sizeof(uint64_t)*g_temp_buffer_size); 
+        bzero(tempBuffer, g_temp_buffer_size); 
         this->setNetworkType(DDFS_NETWORK_TCP);
         return (ddfsStatus(DDFS_OK));
     }
@@ -281,6 +281,9 @@ public:
         /* This pointer would be passed to us in the sendData */
         *privatePtr = &(requestQueues[i]);
 
+        global_logger_tem << ddfsLogger::LOG_INFO
+                << "network :: setupPortal.\n";
+
         isConnectionOpen();
 
         return ddfsStatus(DDFS_OK);
@@ -291,6 +294,9 @@ public:
     {
         int returnValue = 0;
         requestQueue *rQueueInstance = (requestQueue *) privatePtr;
+
+        global_logger_tem << ddfsLogger::LOG_INFO
+                << "network :: sendData.\n";
 
         if(rQueueInstance->in_use == false)
             return ddfsStatus(DDFS_FAILURE);
@@ -322,6 +328,8 @@ public:
                 global_logger_tem << ddfsLogger::LOG_INFO << "TCP::Send : Unable to send data."
                     << strerror(errno) << "\n";
                 return (ddfsStatus(DDFS_FAILURE));
+            } else {
+                break;
             }
         }
 
@@ -419,6 +427,12 @@ public:
         destinationAddrSize = -1;
 
         bzero(tempBuffer, g_temp_buffer_size);
+        tempBuffer[0] = 'H';
+        tempBuffer[1] = 'A';
+        tempBuffer[2] = 'R';
+        tempBuffer[3] = 'M';
+        tempBuffer[4] = 'A';
+        tempBuffer[5] = 'N';
 
         return (ddfsStatus(DDFS_OK));
     }
@@ -458,9 +472,6 @@ public:
         if(!localhost.compare(remoteNodeHostName)) {  /* Thread for local Port */
             global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: Background thread for localNode.\n";
             while(1) {
-                /* Server port is already opened.
-                * Start listening to the port.
-                */
                 socklen_t clilen;
 
                 global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: BT : Listening for a connection.\n";
@@ -490,17 +501,26 @@ public:
                 continue;
             }
         } else { /* Thread for remoteNode. */
-
+            bool connectionEstablishedRightNow = false;
             while(1) {
-
                 if(isConnectionOpen() == false) {
                     global_logger_tem << ddfsLogger::LOG_WARNING << " TCP:: BT : Connection to " << remoteNodeHostName << " is not up yet !!. "
                                     << "Sleeping for 2 second.\n";
                     sleep(2);
+                    connectionEstablishedRightNow = false;
                     continue;
                 }
 
-                global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: BT : Connection established with " << remoteNodeHostName << "\n";
+                if(connectionEstablishedRightNow == false) {
+                    global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: BT : Connection established with " << remoteNodeHostName << "\n";
+                    connectionEstablishedRightNow = true;
+                }
+                global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: BT: Temp Buffer before recieve data.\n";
+                
+                for (int i = 0; i < 6; i++) {
+                        global_logger_tem << ddfsLogger::LOG_INFO << "    " << tempBuffer[i];
+                }
+                cout << "\n";
 
                 ret = recvfrom(serverSocketFD, (void *) tempBuffer,
                                 sizeof(ddfsClusterHeader), MSG_PEEK,
@@ -516,16 +536,34 @@ public:
                     continue;
                 }
  
-                global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: BT : Recieved some data\n";
-                global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: BT : Temp Buffer : " << (char *)tempBuffer << " : \n";
+                global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: BT : " << remoteNodeHostName << ": Recieved data of size " << ret << "\n";
+                global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: BT : " << remoteNodeHostName << ": Temp Buffer : ";
+                for (int i = 0; i < ret; i++) {
+                        global_logger_tem << ddfsLogger::LOG_INFO << "i = " << i << "       ** ";
+                        global_logger_tem << ddfsLogger::LOG_INFO << "    " << tempBuffer[i];
+                }
+                cout << "\n";
 
                 if(ret < sizeof(ddfsClusterHeader)) {
-                    global_logger_tem << ddfsLogger::LOG_WARNING << "TCP:: BT : Data recieved is less that clusterheader from Host Name. "
-                                << strerror(errno) <<"\n";
+                    global_logger_tem << ddfsLogger::LOG_WARNING << "TCP:: BT : Data recieved is less that clusterheader from Host Name.\n";
                     continue;
                 }
-
+#if 0
+typedef struct {
+	uint8_t version;        /* 1 bytes */
+	uint8_t typeOfService;  /* 1 bytes -- enum clusterMessageTypeOfService */
+	uint16_t totalLength;   /* 2 bytes */
+    uint64_t uniqueID;      /* 4 bytes */
+	uint32_t internalIndex;	/* 2 bytes -- This is used for Request-Response Queue maintenance */
+    uint32_t Reserved1;     /* 2 bytes */
+    uint32_t Reserved2;     /* 4 bytes */
+} __attribute__((packed)) ddfsClusterHeader;    /* Total 16 bytes */
+#endif
                 ddfsClusterHeader *clusterH = (ddfsClusterHeader *) tempBuffer;
+
+                global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: BT: v: " << clusterH->version << ". tOS: " << clusterH->typeOfService << "\n";
+                global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: BT: tl:" << clusterH->totalLength << ".ID: " << clusterH->uniqueID << "\n";
+                global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: BT: InternalIndex: " << clusterH->internalIndex << "\n";
 
                 /* We alloc it here and it would be deallocated by whoever is the consumer of
                  * this response entry */
@@ -616,7 +654,7 @@ private:
 
     /* Temporary buffer for the current incoming message */
     static const int g_temp_buffer_size = 4096;
-    uint64_t tempBuffer[g_temp_buffer_size];
+    char tempBuffer[g_temp_buffer_size];
 };
 
 template <typename T_sub>

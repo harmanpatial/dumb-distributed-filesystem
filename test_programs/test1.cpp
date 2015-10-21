@@ -31,8 +31,8 @@ int main(int argc, const char *argv[])
     cout << "Trying to add dd2 \n";
     cluster->addMember("192.168.2.14");
 
-    cout << "Sleeping for 5 seconds.\n";
-	sleep(5);
+    cout << "Sleeping for 4 seconds.\n";
+	sleep(3);
 
 	cout << "Starting the leader election : \n";
 	status = cluster->leaderElection();

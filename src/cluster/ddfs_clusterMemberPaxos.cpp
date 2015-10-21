@@ -143,6 +143,14 @@ ddfsStatus ddfsClusterMemberPaxos::init(string hostn, ddfsClusterMemberPaxos *lo
 
 bool ddfsClusterMemberPaxos::isOnline() {
     bool online = false;
+    ddfsStatus status(DDFS_FAILURE);
+
+    status = network->checkConnection();
+
+    if(status.compareStatus(ddfsStatus(DDFS_OK)) == true) {
+        setCurrentState(s_clusterMemberOnline);
+        return true;
+    }
 
 	clusterMemberLock.lock();
     if(memberState.load() == s_clusterMemberOnline)
@@ -315,26 +323,39 @@ ddfsStatus ddfsClusterMemberPaxos::sendClusterMetaData(ddfsClusterMessagePaxos *
         return (ddfsStatus(DDFS_FAILURE));
     }
 
-    request = (requestQEntry *) malloc(sizeof(requestQEntry));
+    global_logger_cmp << ddfsLogger::LOG_INFO
+            << "ddfsClusterMemberPaxos :: sendClusterMetaData: sending data.\n";
+    
+    request = new requestQEntry;
 
-    packetHeader = (ddfsClusterHeader *) message;
+    uint8_t packet[2048];
+    message->returnBuffer(&packet);
 
+    packetHeader = (ddfsClusterHeader *) packet;
+
+    global_logger_cmp << ddfsLogger::LOG_INFO
+            << "sendClusterMetaData :: packetDetail : " << packetHeader->version << " " << packetHeader->typeOfService << " " << packetHeader->totalLength << "\n";
+    
     /* Create the Request queue entry for this packet */
     request->typeOfService = packetHeader->typeOfService;
     request->totalLength = packetHeader->totalLength;
+
+    global_logger_cmp << ddfsLogger::LOG_INFO
+            << "ddfsClusterMemberPaxos :: sendClusterMetaData: size of " << request->totalLength << "bytes.\n";
+    
 	if(request->totalLength > MAX_REQUEST_SIZE) {
 		free(request);
 		global_logger_cmp << ddfsLogger::LOG_WARNING
-				<< "Size of message is greater than MAX_REQUEST_SIZE : " << packetHeader->totalLength << "\n";
+				<< "Size of message is greater than MAX_REQUEST_SIZE : " << request->totalLength << "\n";
 		return (ddfsStatus(DDFS_FAILURE));
 	}
-	memcpy(request->data, message->returnBuffer(), request->totalLength);
+	memcpy(request->data, packet, request->totalLength);
     request->uniqueID = packetHeader->uniqueID;
     request->privateData = NULL;
     
     //reqQueue.push(request);
     /* Push the data to the request queue */
-    network->sendData(message->returnBuffer(), message->returnBufferSize(),
+    network->sendData(request, message->returnBufferSize(),
                     networkPrivatePtr);
 	return (ddfsStatus(DDFS_OK));
 }

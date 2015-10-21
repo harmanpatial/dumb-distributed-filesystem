@@ -9,10 +9,13 @@
  *
  */
 
+#include <iostream>
 #include <string>
 #include <arpa/inet.h>
 #include <cstring>
 #include <stdlib.h>
+
+using namespace std;
 
 #include "ddfs_clusterMessagesPaxos.hpp"
 #include "../global/ddfs_status.hpp"
@@ -28,13 +31,13 @@
  *
  */
 
-#define SIZE_OF_HEADER		12
-#define SIZE_OF_MESSAGE		8
+#define SIZE_OF_HEADER		sizeof(ddfsClusterHeader)
+#define SIZE_OF_MESSAGE		sizeof(ddfsClusterMessage)
 #define MAX_NUM_OF_MESSAGES	4
 #define MAX_SIZE_OF_MESSAGES	(SIZE_OF_MESSAGE * MAX_NUM_OF_MESSAGES) 
 
 ddfsClusterMessagePaxos::ddfsClusterMessagePaxos() {
-	ddfsHeader.version = 0;
+	ddfsHeader.version = 0xFF;
 	ddfsHeader.typeOfService = CLUSTER_MESSAGE_TOF_CLUSTER_UNKNOWN;
 	ddfsHeader.totalLength = 0;
 	memset(&ddfsMessage, 0, sizeof(ddfsClusterMessage));
@@ -67,7 +70,7 @@ ddfsStatus ddfsClusterMessagePaxos::addMessage(uint16_t messageType, uint64_t pr
 	return (ddfsStatus(DDFS_OK));
 }
 
-void * ddfsClusterMessagePaxos::returnBuffer() {
+void ddfsClusterMessagePaxos::returnBuffer(void *outputBuffer) {
 	memcpy(message, &ddfsHeader.version, sizeof(ddfsHeader.version));
 	memcpy((uint8_t *)message + sizeof(ddfsHeader.version),
 		&ddfsHeader.typeOfService, sizeof(ddfsHeader.typeOfService));
@@ -75,7 +78,7 @@ void * ddfsClusterMessagePaxos::returnBuffer() {
 	memcpy((uint8_t *)message + sizeof(ddfsHeader.version) + sizeof(ddfsHeader.typeOfService),
 		&ddfsHeader.totalLength, sizeof(ddfsHeader.totalLength));
 
-	return (void *)message;
+    memcpy(outputBuffer, (void *) message, ddfsHeader.totalLength);
 }
 
 uint64_t ddfsClusterMessagePaxos::returnBufferSize() {

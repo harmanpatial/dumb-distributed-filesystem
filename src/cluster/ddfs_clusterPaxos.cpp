@@ -82,13 +82,13 @@ ddfsStatus ddfsClusterPaxos::leaderElection() {
         /* Execute the Paxos Instance */
 		int pr = getProposalNumber();
 		int newLeader = -1;
-        status = paxosInstance.execute(pr, localClusterMember->getMemberID(), members, &newLeader);
+        status = paxosInstance.execute(pr, localClusterMember->getMemberID(), clusterMembers, &newLeader);
         if(status.compareStatus(ddfsStatus(DDFS_OK)) == false) {
 			int timeout = 0;
 
             retryCount--;
             global_logger_cp << ddfsLogger::LOG_WARNING << "********* LE : PAXOS INSTANCE FAILED : RETRYING : "
-                   << retryCount << " *********";
+                   << retryCount << " *********\n";
 			srand(time(NULL));
 			while(timeout == 0)
 				timeout = rand()%400;
@@ -98,7 +98,7 @@ ddfsStatus ddfsClusterPaxos::leaderElection() {
 
             if(retryCount == 0) {
                 global_logger_cp << ddfsLogger::LOG_WARNING << "********* LE : FAILED : "
-                   << retryCount << " *********";
+                   << retryCount << " *********\n";
 				break;
             }
                 
@@ -106,15 +106,15 @@ ddfsStatus ddfsClusterPaxos::leaderElection() {
 			/* TODO: Set node with uid of newLeader as the leader */
 			//setLeader(getLocalNode(), pr);
 			global_logger_cp << ddfsLogger::LOG_WARNING << "********* LE : SELECTED : "
-                   << newLeader << " *********";
+                   << newLeader << " *********\n";
             leaderElectionCompleted = true;
         }
     }
 
 	if(leaderElectionCompleted == true)
-		global_logger_cp << ddfsLogger::LOG_WARNING << "LEADER ELECTION SUCCESSFULL.";
+		global_logger_cp << ddfsLogger::LOG_WARNING << "LEADER ELECTION SUCCESSFULL.\n";
 	else
-		global_logger_cp << ddfsLogger::LOG_WARNING << "FAILED LEADER ELECTION.";
+		global_logger_cp << ddfsLogger::LOG_WARNING << "FAILED LEADER ELECTION.\n";
 
 	return status; 
 }
@@ -244,8 +244,6 @@ ddfsStatus ddfsClusterPaxos::addMember(string newHostName) {
     ddfsClusterMemberPaxos *newMember = new ddfsClusterMemberPaxos(this);
 
     newMember->init(newHostName, getLocalNode());
-
-	return (ddfsStatus(DDFS_OK));
 
     clusterMembers.push_back(newMember);
     clusterMemberCount++;
