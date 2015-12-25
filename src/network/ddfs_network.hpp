@@ -28,7 +28,7 @@
  * One network instance is created per remote node.
  * Connection is between localNode <----> remoteNode.
  *
- * There is one to one relation between udpConnection and MemberPaxos.
+ * There is one to one relation between tcpConnection and MemberPaxos.
  * For the local MemberPaxos there is no network instance.
  *
  * TODO:

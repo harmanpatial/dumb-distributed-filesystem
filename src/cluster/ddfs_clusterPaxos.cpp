@@ -28,7 +28,7 @@ ddfsLogger &global_logger_cp = ddfsLogger::getInstance();
 ddfsClusterPaxos::ddfsClusterPaxos(string localHostName) {
 	clusterID = s_clusterIDInvalid;
 	clusterMemberCount = 1; /* 1 for the local Node */
-	paxosProposalNumber = 0;
+	paxosProposalNumber = 88;
 
 	localClusterMember = new ddfsClusterMemberPaxos();
     /* Initialize the local node */
@@ -238,8 +238,8 @@ ddfsStatus ddfsClusterPaxos::addMember(string newHostName) {
      *        initialization.
      */
 	
-	global_logger_cp << ddfsLogger::LOG_INFO << "CLUSTER :: Adding host, "
-					<< newHostName << ", to the cluster\n";
+	global_logger_cp << ddfsLogger::LOG_INFO << "CLUSTER :: Adding node "
+					<< newHostName << " to the cluster\n";
 
     ddfsClusterMemberPaxos *newMember = new ddfsClusterMemberPaxos(this);
 

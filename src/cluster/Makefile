@@ -1,4 +1,3 @@
-
 CC=g++
 CFLAGS= -g -c -std=c++11 -Winline -Wall -Werror -pedantic-errors -pthread
 LDFLAGS= -fpic #-v

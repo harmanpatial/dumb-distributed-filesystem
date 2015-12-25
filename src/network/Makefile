@@ -3,7 +3,6 @@ CC=g++
 CFLAGS= -g -c -std=c++11 -Winline -Wall -Werror -pedantic-errors -pthread
 LDFLAGS= -fpic # -v
 
-#SOURCES = ddfs_udpConnection.cpp
 SOURCES = 
 INCLUDE = ddfs_status.h ../logges/ddfs_logger.h ddfs_network.h
 OBJLIBS	= ../ddfs_fileLogger.o

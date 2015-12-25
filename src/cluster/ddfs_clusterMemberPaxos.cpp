@@ -54,7 +54,10 @@ ddfsStatus ddfsClusterMemberPaxos::init(string hostn, ddfsClusterMemberPaxos *lo
     global_logger_cmp << ddfsLogger::LOG_INFO
                         << "clusterMemberPaxos :: Opening the network connection.\n";
 
-    /*  Only connect to the remote IP server port if localIP < remoteIP,
+    /*  Only connect to the remote IP server port if following condition is met.
+     *
+     *  localIP < remoteIP
+     *
      *  else it is the responsibility of the remote IP to connect to my
      *  DDFS_SERVER_PORT.
      */
@@ -251,12 +254,13 @@ ddfsStatus ddfsClusterMemberPaxos::processMessage(ddfsClusterMessage *message) {
 
 void ddfsClusterMemberPaxos::callback(void *data, int size) {
     //ddfsClusterMemberPaxos *member = (ddfsClusterMemberPaxos *) thisInstance;
-    responseQEntry *entry = NULL;
     uint8_t numberOfDdfsMessages;
+    ddfsClusterHeader *ddfsHeader;
     //uint16_t typeOfService, totalLength;
-    uint8_t *data_p = (uint8_t *) data;
     ddfsStatus status(DDFS_FAILURE);
 
+    global_logger_cmp << ddfsLogger::LOG_WARNING
+            << "ddfsClusterMemberPaxos::callback: Enter.\n";
     /* This is a special case for when the connection is being about to
      * close.
      */
@@ -264,42 +268,27 @@ void ddfsClusterMemberPaxos::callback(void *data, int size) {
         return;
     }
 
-#if 0
-    if(numberOfEntries != 0) {
-        std::unique_lock<std::mutex> lock(responseQLock);
-        needToProcess.notify_all();
-    }/* responseQLock automatically unlocked */
+    ddfsHeader = (ddfsClusterHeader *) data;
 
-
-void ddfsClusterMemberPaxos::processingResponses() {
-
-    /* Go through the response queue */
-    while(1) {
-        std::unique_lock<std::mutex> lk(responseQLock);
-        needToProcess.wait(lk,
-                        [] { return true; });
-
-        while (rspQueue.empty() == false ) {
-#endif
-            entry = (responseQEntry *) data;
-
-            /* If this is a packet for the paxos iteration, network class should
-             * handle this internally.
-             */
+    global_logger_cmp << ddfsLogger::LOG_INFO << "CMP: v: " << ddfsHeader->version << ". tOS: " << ddfsHeader->typeOfService << "\n";
+    global_logger_cmp << ddfsLogger::LOG_INFO << "CMP: tl:" << ddfsHeader->totalLength << ".ID: " << ddfsHeader->uniqueID << "\n";
+    global_logger_cmp << ddfsLogger::LOG_INFO << "CMP: sizeof(ddfsClusterHeader) : " << sizeof(ddfsClusterHeader) << "\n";
+    global_logger_cmp << ddfsLogger::LOG_INFO << "CMP: sizeof(ddfsClusterMessage) : " << sizeof(ddfsClusterMessage) << "\n";
 
 #if 0
-            global_logger_cmp << ddfsLogger::LOG_INFO
-                            << "This is the message received from " << getHostName << " : "
-                            << entry->data[0] << entry->data[1] << entry->data[2] << entry->data[3]
-                            << entry->data[4] << entry->data[5] << entry->data[6] << entry->data[7]
-                            << entry->data[8] << entry->data[9] << entry->data[10] << entry->data[11]
-                            << entry->data[12] << entry->data[13] << entry->data[14] << entry->data[15] << "\n";
+    global_logger_cmp << ddfsLogger::LOG_INFO
+                << "This is the message received from " << getHostName << " : "
+                << entry->data[0] << entry->data[1] << entry->data[2] << entry->data[3]
+                << entry->data[4] << entry->data[5] << entry->data[6] << entry->data[7]
+                << entry->data[8] << entry->data[9] << entry->data[10] << entry->data[11]
+                << entry->data[12] << entry->data[13] << entry->data[14] << entry->data[15] << "\n";
 #endif            
-            if(entry->typeOfService == CLUSTER_MESSAGE_TOF_CLUSTER_MGMT) {
-                numberOfDdfsMessages = ((entry->totalLength)-sizeof(ddfsClusterHeader))/sizeof(ddfsClusterMessage);
+            if(ddfsHeader->typeOfService == CLUSTER_MESSAGE_TOF_CLUSTER_MGMT) {
+                numberOfDdfsMessages = ((ddfsHeader->totalLength)-sizeof(ddfsClusterHeader))/sizeof(ddfsClusterMessage);
 
+                global_logger_cmp << ddfsLogger::LOG_WARNING << "Total DDFS Messages in this packet is : " << numberOfDdfsMessages << "\n";
                 for (int i = 0; i < numberOfDdfsMessages; i++) {
-                    status = processMessage((ddfsClusterMessage *)(data_p + sizeof(ddfsClusterHeader) + (i*sizeof(ddfsClusterMessage))));
+                    status = processMessage((ddfsClusterMessage *)((uint8_t *) data + sizeof(ddfsClusterHeader) + (i*sizeof(ddfsClusterMessage))));
                     if(status.compareStatus(ddfsStatus(DDFS_OK)) == false) {
                         global_logger_cmp << ddfsLogger::LOG_WARNING
                                     << "networkCommunication :: Discarding a packet.\n";
@@ -341,7 +330,7 @@ ddfsStatus ddfsClusterMemberPaxos::sendClusterMetaData(ddfsClusterMessagePaxos *
     request->totalLength = packetHeader->totalLength;
 
     global_logger_cmp << ddfsLogger::LOG_INFO
-            << "ddfsClusterMemberPaxos :: sendClusterMetaData: size of " << request->totalLength << "bytes.\n";
+            << "ddfsClusterMemberPaxos :: sendClusterMetaData: size of " << request->totalLength << " bytes." << "\n";
     
 	if(request->totalLength > MAX_REQUEST_SIZE) {
 		free(request);
@@ -352,6 +341,11 @@ ddfsStatus ddfsClusterMemberPaxos::sendClusterMetaData(ddfsClusterMessagePaxos *
 	memcpy(request->data, packet, request->totalLength);
     request->uniqueID = packetHeader->uniqueID;
     request->privateData = NULL;
+    
+    packetHeader = (ddfsClusterHeader *) request->data;
+
+    global_logger_cmp << ddfsLogger::LOG_INFO
+            << "sendClusterMetaData :: packetDetail for Request : " << packetHeader->version << " " << packetHeader->typeOfService << " " << packetHeader->totalLength << "\n";
     
     //reqQueue.push(request);
     /* Push the data to the request queue */

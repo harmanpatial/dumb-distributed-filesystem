@@ -18,6 +18,7 @@
 #include <queue>
 #include <thread>
 #include <strings.h>
+#include <string>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -63,8 +64,8 @@ public:
     }
 
     void callSubscription(void *data, int size) {
-       for(int i=0; i < subscribedInstances.size(); i++){
-           subscribedInstances[i]->callback(data, size);
+        for(int i=0; i < subscribedInstances.size(); i++){
+            subscribedInstances[i]->callback(data, size);
         }
     }
 };
@@ -116,6 +117,31 @@ private:
 public:
     ddfsTcpConnection() {}
     ~ddfsTcpConnection() {}
+
+    void printBuffer(void *data, int size, string printMessage) {
+        global_logger_tem << ddfsLogger::LOG_INFO << printMessage << ": \n";
+        string tempPrintBuffer;
+        int i=0;
+        uint8_t *printData = (uint8_t *) data;
+
+        while(i < size) {
+            if((size-i) > 16) {
+                for(int j=0; j < 16; j++, i++) {
+                    tempPrintBuffer.append(to_string(*(printData+i)));
+                    tempPrintBuffer.append("  ");
+                }
+            }
+            else {
+                int newLength = size-i;
+                for(int j=0; j < newLength; j++, i++) {
+                    tempPrintBuffer.append(to_string(*(printData+i)));
+                    tempPrintBuffer.append("  ");
+                }
+            }
+            global_logger_tem << ddfsLogger::LOG_INFO << tempPrintBuffer << "\n";
+            tempPrintBuffer.clear();
+        }
+    }
 
     ddfsStatus init() {
         serverSocketFD = -1;
@@ -244,7 +270,7 @@ public:
         global_logger_tem << ddfsLogger::LOG_INFO << "About to create a thread.\n";
         bkThreads = std::thread(&ddfsTcpConnection::bk_routine, this);
         //std::thread t1(ddfsTcpConnection::bk_routine, (void *) this);
-        global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: Server connections opened.\n";
+        global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: Server port opened.\n";
 
         return (ddfsStatus(DDFS_OK));
     }
@@ -263,20 +289,28 @@ public:
         queuesLock.lock();
     
         while(i<g_max_req_queues) {
-            if(requestQueues[i].in_use == false)
+            if((requestQueues[i].in_use == false) || (responseQueues[i].in_use == false))
                 break;
             i++;
         }
 
         if(i == g_max_req_queues) {
-            global_logger_tem << ddfsLogger::LOG_WARNING << "TCP:: BT : Max. number of req/rsp queues reached : " << 
+            global_logger_tem << ddfsLogger::LOG_WARNING << "TCP(" << remoteNodeHostName << "): Max. number of req/rsp queues reached : " << 
                             g_max_req_queues << ".\n";
             return ddfsStatus(DDFS_FAILURE);
         }
 
+        global_logger_tem << ddfsLogger::LOG_WARNING << "TCP(" << remoteNodeHostName << "): Req/Respose Queue Set : Index : " << i << "\n";
+
         requestQueues[i].in_use = true;
         responseQueues[i].in_use = true;
+
+        requestQueues[i].correspondingResponseQIndex = i;
         queuesLock.unlock();
+
+        responseQueueIndex = i;
+
+        global_logger_tem << ddfsLogger::LOG_WARNING << "TCP(" << remoteNodeHostName << "): Response Queue Index is " << responseQueueIndex << "\n";
 
         /* This pointer would be passed to us in the sendData */
         *privatePtr = &(requestQueues[i]);
@@ -290,6 +324,9 @@ public:
     }
 
     /* Only put data on queue, don't actually send it  */
+    /* privatePtr : This is the pointer to the request queue where
+     *              data needs to be placed.
+     */
     ddfsStatus sendData(void *data, int size, void *privatePtr)
     {
         int returnValue = 0;
@@ -305,9 +342,7 @@ public:
             return (ddfsStatus(DDFS_FAILURE));
 
         struct request * entry = new request;
-        ddfsClusterHeader *clusterH = (ddfsClusterHeader *) data;
-
-        clusterH->internalIndex = rQueueInstance->correspondingResponseQIndex;
+        //ddfsClusterHeader *clusterH = (ddfsClusterHeader *) data;
 
         entry->data = data;
         entry->size = size;
@@ -320,6 +355,8 @@ public:
             rQueueInstance->pipe.pop();
             rQueueInstance->rLock.unlock();
             
+            printBuffer(entry->data, entry->size, "TCP::Send: Network Packet: ");
+
             /* Send the data to the other node */
             returnValue = sendto(serverSocketFD, entry->data,
                                 entry->size, 0,
@@ -368,7 +405,8 @@ public:
             return (ddfsStatus(DDFS_FAILURE));
         }
 
-        rspQInstance = &responseQueues[reqQInstance->requestQIndex];
+        rspQInstance = &responseQueues[reqQInstance->correspondingResponseQIndex];
+        global_logger_tem << ddfsLogger::LOG_INFO << "TCP(" << remoteNodeHostName << "): subscribing with response Q : " << reqQInstance->correspondingResponseQIndex << "\n";
 
         rspQInstance->subscriptions.addSubscription(owner);
 
@@ -470,11 +508,11 @@ public:
         global_logger_tem << ddfsLogger::LOG_WARNING << "TCP:: Started the background thread.\n";
 
         if(!localhost.compare(remoteNodeHostName)) {  /* Thread for local Port */
-            global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: Background thread for localNode.\n";
+            global_logger_tem << ddfsLogger::LOG_INFO << "TCP(" << remoteNodeHostName << "):: Background thread for localNode.\n";
             while(1) {
                 socklen_t clilen;
 
-                global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: BT : Listening for a connection.\n";
+                global_logger_tem << ddfsLogger::LOG_INFO << "TCP(" << remoteNodeHostName << "):: BT : Listening for a connection.\n";
                 ret = listen(serverSocketFD,5);
                 if (ret == -1) {
                     global_logger_tem << ddfsLogger::LOG_INFO << "ERROR on listen. error " << strerror(errno) << "\n";
@@ -504,7 +542,7 @@ public:
             bool connectionEstablishedRightNow = false;
             while(1) {
                 if(isConnectionOpen() == false) {
-                    global_logger_tem << ddfsLogger::LOG_WARNING << " TCP:: BT : Connection to " << remoteNodeHostName << " is not up yet !!. "
+                    global_logger_tem << ddfsLogger::LOG_WARNING << " TCP(" << remoteNodeHostName << "):: BT : Connection to " << remoteNodeHostName << " is not up yet !!. "
                                     << "Sleeping for 2 second.\n";
                     sleep(2);
                     connectionEstablishedRightNow = false;
@@ -512,62 +550,55 @@ public:
                 }
 
                 if(connectionEstablishedRightNow == false) {
-                    global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: BT : Connection established with " << remoteNodeHostName << "\n";
+                    global_logger_tem << ddfsLogger::LOG_INFO << "TCP(" << remoteNodeHostName << "):: BT : Connection established with " << remoteNodeHostName << "\n";
                     connectionEstablishedRightNow = true;
                 }
-                global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: BT: Temp Buffer before recieve data.\n";
+                global_logger_tem << ddfsLogger::LOG_INFO << "TCP(" << remoteNodeHostName << "):: BT: Temp Buffer before recieve data.\n";
                 
                 for (int i = 0; i < 6; i++) {
-                        global_logger_tem << ddfsLogger::LOG_INFO << "    " << tempBuffer[i];
+                        global_logger_tem << ddfsLogger::LOG_INFO << "    " << tempBuffer[i] << "\n";
                 }
-                cout << "\n";
 
                 ret = recvfrom(serverSocketFD, (void *) tempBuffer,
                                 sizeof(ddfsClusterHeader), MSG_PEEK,
                                 (struct sockaddr *) &clientAddr, (socklen_t *)&serverAddrLen);
 
                 if(ret == -1) {
-                    global_logger_tem << ddfsLogger::LOG_WARNING << "TCP:: BT : Fail to get IP address from Host Name. "
+                    global_logger_tem << ddfsLogger::LOG_WARNING << "TCP(" << remoteNodeHostName << "):: BT : Fail to get IP address from Host Name. "
                                 << strerror(errno) <<"\n";
                     continue;
                 } else if(ret == 0) {
-                    global_logger_tem << ddfsLogger::LOG_WARNING << "TCP:: BT : Connection closed by pair. "
+                    global_logger_tem << ddfsLogger::LOG_WARNING << "TCP(" << remoteNodeHostName << "):: BT : Connection closed by pair. "
                                 << strerror(errno) <<"\n";
                     continue;
                 }
- 
                 global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: BT : " << remoteNodeHostName << ": Recieved data of size " << ret << "\n";
+#if 0 
                 global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: BT : " << remoteNodeHostName << ": Temp Buffer : ";
                 for (int i = 0; i < ret; i++) {
                         global_logger_tem << ddfsLogger::LOG_INFO << "i = " << i << "       ** ";
-                        global_logger_tem << ddfsLogger::LOG_INFO << "    " << tempBuffer[i];
+                        global_logger_tem << ddfsLogger::LOG_INFO << "    " << tempBuffer[i] << "\n";
                 }
-                cout << "\n";
+#endif
+                printBuffer(tempBuffer, ret, "TCP:: BT: Recieved Network Packet: ");
 
                 if(ret < sizeof(ddfsClusterHeader)) {
-                    global_logger_tem << ddfsLogger::LOG_WARNING << "TCP:: BT : Data recieved is less that clusterheader from Host Name.\n";
+                    global_logger_tem << ddfsLogger::LOG_WARNING << "TCP(" << remoteNodeHostName << "):: BT : Data recieved is less that clusterheader from Host Name.\n";
                     continue;
                 }
-#if 0
-typedef struct {
-	uint8_t version;        /* 1 bytes */
-	uint8_t typeOfService;  /* 1 bytes -- enum clusterMessageTypeOfService */
-	uint16_t totalLength;   /* 2 bytes */
-    uint64_t uniqueID;      /* 4 bytes */
-	uint32_t internalIndex;	/* 2 bytes -- This is used for Request-Response Queue maintenance */
-    uint32_t Reserved1;     /* 2 bytes */
-    uint32_t Reserved2;     /* 4 bytes */
-} __attribute__((packed)) ddfsClusterHeader;    /* Total 16 bytes */
-#endif
-                ddfsClusterHeader *clusterH = (ddfsClusterHeader *) tempBuffer;
 
-                global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: BT: v: " << clusterH->version << ". tOS: " << clusterH->typeOfService << "\n";
-                global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: BT: tl:" << clusterH->totalLength << ".ID: " << clusterH->uniqueID << "\n";
-                global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: BT: InternalIndex: " << clusterH->internalIndex << "\n";
+                requestQEntry *newRequest = (requestQEntry *) tempBuffer;
+                ddfsClusterHeader *clusterH = (ddfsClusterHeader *) newRequest->data;
+
+                global_logger_tem << ddfsLogger::LOG_INFO << "TCP(" << remoteNodeHostName << "):: BT: v: " << clusterH->version << ". tOS: " << clusterH->typeOfService << "\n";
+                global_logger_tem << ddfsLogger::LOG_INFO << "TCP(" << remoteNodeHostName << "):: BT: tl:" << clusterH->totalLength << ".ID: " << clusterH->uniqueID << "\n";
+                global_logger_tem << ddfsLogger::LOG_INFO << "TCP(" << remoteNodeHostName << "):: BT: sizeof(ddfsClusterHeader) : " << sizeof(ddfsClusterHeader) << "\n";
 
                 /* We alloc it here and it would be deallocated by whoever is the consumer of
                  * this response entry */
-                void *totalMessage = malloc(clusterH->totalLength);
+                /* totalLengthOfTheMessage -- Total Length of the message including the header  */
+                int totalLengthOfTheMessage = clusterH->totalLength;
+                void *totalMessage = malloc(totalLengthOfTheMessage);
                 memcpy(totalMessage, tempBuffer, sizeof(ddfsClusterHeader));
 
                 /* Parse the ddfsHeader and know how much data is expected with
@@ -575,13 +606,13 @@ typedef struct {
                  *
                  * Place the ddfsHeader as well as the data on the response queue.
                  */
-                if(clusterH->totalLength > 0) {
+                if((totalLengthOfTheMessage - sizeof(ddfsClusterHeader)) > 0) {
                     ret = recvfrom(serverSocketFD, (void *) (((uint8_t *) totalMessage) + sizeof(ddfsClusterHeader)),
-                                    clusterH->totalLength, 0,
+                                    (totalLengthOfTheMessage - sizeof(ddfsClusterHeader)), 0,
                                     (struct sockaddr *) &clientAddr, (socklen_t *)&serverAddrLen);
 
                     if(ret == -1) {
-                        global_logger_tem << ddfsLogger::LOG_WARNING << "TCP:: BT : Fail to get IP address from Host Name. "
+                        global_logger_tem << ddfsLogger::LOG_WARNING << "TCP(" << remoteNodeHostName << "):: BT : Fail to get IP address from Host Name. "
                                 << strerror(errno) <<"\n";
                         continue;
                     }
@@ -597,20 +628,28 @@ typedef struct {
                     rightTCPConnection = (*iter);
             }
 #endif
+
                 responseQEntry newEntry;
 
                 newEntry.typeOfService = clusterH->typeOfService;
                 newEntry.totalLength = clusterH->totalLength;
                 newEntry.data = totalMessage;
 
-                responseQueues[clusterH->internalIndex].rLock.lock();
-                responseQueues[clusterH->internalIndex].dataBuffer.push(newEntry);
-                responseQueues[clusterH->internalIndex].rLock.unlock();
+                global_logger_tem << ddfsLogger::LOG_INFO << "TCP(" << remoteNodeHostName << "):: BT : Placing data on Response Queue no. " << responseQueueIndex << "\n";
+                global_logger_tem << ddfsLogger::LOG_INFO << "TCP(" << remoteNodeHostName << "):: BT : in use = " << responseQueues[responseQueueIndex].in_use << "\n";
+
+                responseQueues[responseQueueIndex].rLock.lock();
+                responseQueues[responseQueueIndex].dataBuffer.push(newEntry);
+                global_logger_tem << ddfsLogger::LOG_INFO << "TCP(" << remoteNodeHostName << "):: BT : Placed the data. Calling subscribers.\n";
+                responseQueues[responseQueueIndex].subscriptions.callSubscription(&newEntry.data, newEntry.totalLength);
+                responseQueues[responseQueueIndex].rLock.unlock();
+
+                global_logger_tem << ddfsLogger::LOG_INFO << "TCP(" << remoteNodeHostName << "):: BT : End of while loop. \n";
 
             } /* while loop end */
         } /* else loop end */
 
-        global_logger_tem << ddfsLogger::LOG_WARNING << "TCP:: BT : Exiting the receiver thread.\n";
+        global_logger_tem << ddfsLogger::LOG_WARNING << "TCP(" << remoteNodeHostName << "):: BT : Exiting the receiver thread.\n";
 
         pthread_exit(NULL);
     }  /* End of bk_routine() */
@@ -623,6 +662,7 @@ private:
     string remoteNodeHostName;
     sockaddr_in destinationAddr;
     uint32_t destinationAddrSize;
+    int responseQueueIndex;
 
     /* Request/Response Queues */
     std::mutex queuesLock;
@@ -654,7 +694,7 @@ private:
 
     /* Temporary buffer for the current incoming message */
     static const int g_temp_buffer_size = 4096;
-    char tempBuffer[g_temp_buffer_size];
+    uint8_t tempBuffer[g_temp_buffer_size];
 };
 
 template <typename T_sub>

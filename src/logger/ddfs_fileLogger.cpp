@@ -14,6 +14,7 @@
 #include <fstream>
 #include <time.h>
 #include <iostream>
+#include <thread>
 
 #include "ddfs_fileLogger.hpp"
 
@@ -31,28 +32,32 @@ ddfsLogger& ddfsLogger::getInstance(const string fname) {
  * [2013-11-08].08-09-04:[log level]:log message
  *
  * Eg.
- * [2013-11-08].08-09-04:[ERROR]:DDFS is starting
+ * [2013-11-08].08-09-04:[INFO]:DDFS is starting
  */
 ddfsLogger &operator << (ddfsLogger &logger, const ddfsLogger::e_logType l_type) {
 	time_t current = time(0);
 	char       time_buf[80];
 	struct tm * now = localtime(& current);
+    std::thread::id this_id = std::this_thread::get_id();
 
 	strftime(time_buf, sizeof(time_buf), "[%Y-%m-%d].%H-%M-%S:", now);
 	logger.myFile << time_buf;
 	switch (l_type) {
     	case ddfsLogger::LOG_ERROR:
-			logger.myFile << "[ERROR]: ";
+			logger.myFile << "[ERROR]";
 			++logger.numErrors;
 			break;
     	case ddfsLogger::LOG_WARNING:
-			logger.myFile << "[WARNING]: ";
+			logger.myFile << "[WARNING]";
 			++logger.numWarnings;
 			break;
     	default:
-			logger.myFile << "[INFO]: ";
+			logger.myFile << "[INFO]";
 			break;
 	} // sw
+
+    logger.myFile << "[" << this_id << "]: ";
+
 	return logger;
 }
 

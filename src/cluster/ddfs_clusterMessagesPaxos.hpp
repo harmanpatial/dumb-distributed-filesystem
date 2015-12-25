@@ -29,20 +29,32 @@
  */
 
 enum clusterMessageTypeOfService {
-	CLUSTER_MESSAGE_TOF_CLUSTER_MGMT = 0,
+	CLUSTER_MESSAGE_TOF_CLUSTER_MGMT = 76,
 	CLUSTER_MESSAGE_TOF_CLUSTER_DATA,
 	CLUSTER_MESSAGE_TOF_CLUSTER_UNKNOWN
 };
 
 enum clusterMessageType {
-	CLUSTER_MESSAGE_LE_TYPE_PREPARE = 0,
+	CLUSTER_MESSAGE_LE_TYPE_PREPARE = 7,
 	CLUSTER_MESSAGE_LE_TYPE_PROMISE,
 	CLUSTER_MESSAGE_LE_ACCEPT_REQUESTED,
 	CLUSTER_MESSAGE_LE_ACCEPTED,
 	CLUSTER_MESSAGE_LE_LEADER_ELECTED,
-	/* Addition - Removal of cluster members */
-	CLUSTER_MESSAGE_ADDING_MEMBER,
-	CLUSTER_MESSAGE_REMOVING_MEMBER
+    /*  Addition - Removal of cluster members */
+    CLUSTER_MESSAGE_ADDING_MEMBER,
+    CLUSTER_MESSAGE_REMOVING_MEMBER,
+    /*  Replica Responsibility */
+    CLUSTER_MESSAGE_REPLICA_RESPONSIBILTY_REQUEST,
+    CLUSTER_MESSAGE_REPLICA_RESPONSIBILTY_REPLY,
+    /*  File INFO */
+    CLUSTER_MESSAGE_FILE_INFORMATION_REQUEST,
+    CLUSTER_MESSAGE_FILE_INFORMATION_REPLY,
+    /*  Write-ahead log info */
+    CLUSTER_MESSAGE_LOGFILE_INFORMATION_REQUEST,
+    CLUSTER_MESSAGE_LOGFILE_INFORMATION_REPLY,
+    /*  Backup related messsages */
+    CLUSTER_MESSAGE_CREATE_BOOKMARK_REQUEST,
+    CLUSTER_MESSAGE_CREATE_BOOKMARK_REPLY,
 };
 
 /******************************************************************
@@ -94,23 +106,23 @@ be attached in this packet. "Total Length".
 
 /*  Packet Header */
 typedef struct {
-	uint8_t version;        /* 1 bytes */
-	uint8_t typeOfService;  /* 1 bytes -- enum clusterMessageTypeOfService */
-	uint16_t totalLength;   /* 2 bytes */
-    uint64_t uniqueID;      /* 4 bytes */
-	uint32_t internalIndex;	/* 2 bytes -- This is used for Request-Response Queue maintenance */
-    uint32_t Reserved1;     /* 2 bytes */
-    uint32_t Reserved2;     /* 4 bytes */
-} __attribute__((packed)) ddfsClusterHeader;    /* Total 16 bytes */
+	uint64_t version;        /* 8 bytes */
+	uint64_t typeOfService;  /* 8 bytes -- enum clusterMessageTypeOfService */
+	uint64_t totalLength;   /* 8 bytes */
+    uint64_t uniqueID;      /* 8 bytes */
+	uint64_t internalIndex;	/* 8 bytes -- This is used for Request-Response Queue maintenance */
+    uint64_t Reserved1;     /* 8 bytes */
+    uint64_t Reserved2;     /* 8 bytes */
+} __attribute__((packed)) ddfsClusterHeader;    /* Total 32 bytes */
 
 /*  Packet cluster message */
 typedef struct {
     uint16_t messageType;	            /* 2 bytes -- enum clusterMessageType */
     uint16_t Reserved1;                 /* 2 bytes */
-    int64_t proposalNumber;             /* 4 bytes */
-    int64_t lastAcceptedProposalNumber; /* 4 bytes */
-	int64_t lastAcceptedValue;			/* 4 bytes This is value that needs to be send in Promise and Accept Command. */
-} __attribute__((packed)) ddfsClusterMessage;
+    int64_t proposalNumber;             /* 8 bytes */
+    int64_t lastAcceptedProposalNumber; /* 8 bytes */
+	int64_t lastAcceptedValue;			/* 8 bytes This is value that needs to be send in Promise and Accept Command. */
+} __attribute__((packed)) ddfsClusterMessage;    /* Total 28 bytes */
 
 /*  Packet data message */
 /*  \note This should only be used by DDFS clients.
