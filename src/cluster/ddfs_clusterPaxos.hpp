@@ -17,7 +17,8 @@
 #include <vector>
 
 #include "ddfs_cluster.hpp"
-#include "ddfs_clusterMemberPaxos.hpp"
+#include "ddfs_clusterMessagesPaxos.hpp"
+// Harman #include "ddfs_clusterMemberPaxos.hpp"
 #include "ddfs_clusterPaxosInstance.hpp"
 #include "../global/ddfs_status.hpp"
 
@@ -39,8 +40,9 @@ using namespace std;
  */
 
 class ddfsClusterMemberPaxos; 
+class ddfsClusterPaxosInstance;
 
-class ddfsClusterPaxos:protected ddfsCluster<ddfsClusterMemberPaxos *, string> {
+class ddfsClusterPaxos:public ddfsCluster<ddfsClusterMemberPaxos *, string> {
 private:
     /* Maximum Cluster Members */
 	static const unsigned int s_maxClusterMembers = 5;
@@ -53,7 +55,7 @@ private:
 	int clusterMemberCount;
 	uint32_t clusterMemberID;
 
-    ddfsClusterPaxosInstance paxosInstance;
+    ddfsClusterPaxosInstance leaderPaxosInstance;
 public:
 	ddfsStatus init();
 	vector<ddfsClusterMemberPaxos *> clusterMembers;

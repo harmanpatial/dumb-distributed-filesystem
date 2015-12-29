@@ -19,7 +19,6 @@
 #include <atomic>
 
 #include "ddfs_clusterMember.hpp"
-//#include "ddfs_clusterPaxos.hpp"
 #include "ddfs_clusterMessagesPaxos.hpp"
 #include "../network/ddfs_tcpConnection.hpp"
 #include "../global/ddfs_status.hpp"
@@ -105,14 +104,11 @@ private:
 	ddfsClusterPaxos* clusterPaxos;
 
     /* Request and Response queues shared with network layer */
-    //std::queue <requestQEntry *> reqQueue;
-    //std::queue <responseQEntry *> rspQueue;
     void *networkPrivatePtr;
 
 	bool local_node;
 
     std::vector<std::thread> workingThreadQ;
-    //std::thread workingThread(ddfsClusterMemberPaxos::processingResponses, this);
 
     ddfsStatus processMessage(ddfsClusterMessage *);
 

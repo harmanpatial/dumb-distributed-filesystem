@@ -22,14 +22,13 @@
 
 #include <vector>
 
-//#include "ddfs_clusterPaxos.hpp"
-#include "ddfs_clusterMemberPaxos.hpp"
 #include "ddfs_clusterMessagesPaxos.hpp"
-
 #include "../global/ddfs_status.hpp"
 #include "../logger/ddfs_fileLogger.hpp"
 
 using namespace std;
+
+class ddfsClusterMemberPaxos;
 
 enum paxosState {
 	/*  Paxos Instance state Leader Election.
