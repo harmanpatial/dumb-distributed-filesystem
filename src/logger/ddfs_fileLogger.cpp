@@ -29,10 +29,10 @@ ddfsLogger& ddfsLogger::getInstance(const string fname) {
 
 /*  log message   */
 /* Format of the log message is 
- * [2013-11-08].08-09-04:[log level]:log message
+ * [2013-11-08].08:09:04:[log level]:log message
  *
  * Eg.
- * [2013-11-08].08-09-04:[INFO]:DDFS is starting
+ * [2013-11-08].08:09:04:[INFO]:DDFS is starting
  */
 ddfsLogger &operator << (ddfsLogger &logger, const ddfsLogger::e_logType l_type) {
 	time_t current = time(0);
@@ -40,7 +40,7 @@ ddfsLogger &operator << (ddfsLogger &logger, const ddfsLogger::e_logType l_type)
 	struct tm * now = localtime(& current);
     std::thread::id this_id = std::this_thread::get_id();
 
-	strftime(time_buf, sizeof(time_buf), "[%Y-%m-%d].%H-%M-%S:", now);
+	strftime(time_buf, sizeof(time_buf), "[%Y-%m-%d].%H:%M:%S:", now);
 	logger.myFile << time_buf;
 	switch (l_type) {
     	case ddfsLogger::LOG_ERROR:

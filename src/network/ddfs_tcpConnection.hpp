@@ -170,7 +170,6 @@ public:
         openConnectionLock.lock();
         if(serverSocketFD == -1) {
             for (iter = openConnections.begin(); iter != openConnections.end(); ) {
-                global_logger_tem << ddfsLogger::LOG_INFO << "first : " << iter->first << ". second : " << inet_ntoa(iter->second.sin_addr) << "\n";
                 string connHostName(inet_ntoa(iter->second.sin_addr));
                 if(!connHostName.compare(remoteNodeHostName)) {
                     serverSocketFD = iter->first;
@@ -510,7 +509,7 @@ public:
         if(!localhost.compare(remoteNodeHostName)) {  /* Thread for local Port */
             global_logger_tem << ddfsLogger::LOG_INFO << "TCP(" << remoteNodeHostName << "):: Background thread for localNode.\n";
             while(1) {
-                socklen_t clilen;
+                socklen_t clilen = sizeof(clientAddr);
 
                 global_logger_tem << ddfsLogger::LOG_INFO << "TCP(" << remoteNodeHostName << "):: BT : Listening for a connection.\n";
                 ret = listen(serverSocketFD,5);
@@ -526,7 +525,7 @@ public:
                 }
 
                 global_logger_tem << ddfsLogger::LOG_INFO << "Accepted a new connection from "
-                               << inet_ntoa(clientAddr.sin_addr) << " and port " << clientAddr.sin_port << "\n";
+                               << inet_ntoa(clientAddr.sin_addr) << " and port " << clientAddr.sin_port << " socket : " << newsockfd << "\n";
 
                 /* This newsockfd should be passed to the appropriate ddfsTcpConnection object.
                  * Parse the clientAddr and then decide on which ddfsTcpConnection to pass this socket to.
@@ -542,8 +541,8 @@ public:
             bool connectionEstablishedRightNow = false;
             while(1) {
                 if(isConnectionOpen() == false) {
-                    global_logger_tem << ddfsLogger::LOG_WARNING << " TCP(" << remoteNodeHostName << "):: BT : Connection to " << remoteNodeHostName << " is not up yet !!. "
-                                    << "Sleeping for 2 second.\n";
+                    global_logger_tem << ddfsLogger::LOG_WARNING << " TCP(" << remoteNodeHostName << "):: BT : Not connected to " << remoteNodeHostName
+                                    << ". Sleeping for 2 second.\n";
                     sleep(2);
                     connectionEstablishedRightNow = false;
                     continue;
@@ -559,6 +558,7 @@ public:
                         global_logger_tem << ddfsLogger::LOG_INFO << "    " << tempBuffer[i] << "\n";
                 }
 
+                /* Just PEEK, peeking with keep the data as unread and the subsequent recvfrom will read the same data */
                 ret = recvfrom(serverSocketFD, (void *) tempBuffer,
                                 sizeof(ddfsClusterHeader), MSG_PEEK,
                                 (struct sockaddr *) &clientAddr, (socklen_t *)&serverAddrLen);
@@ -570,6 +570,8 @@ public:
                 } else if(ret == 0) {
                     global_logger_tem << ddfsLogger::LOG_WARNING << "TCP(" << remoteNodeHostName << "):: BT : Connection closed by pair. "
                                 << strerror(errno) <<"\n";
+                    sleep(2);
+                    serverSocketFD = -1;
                     continue;
                 }
                 global_logger_tem << ddfsLogger::LOG_INFO << "TCP:: BT : " << remoteNodeHostName << ": Recieved data of size " << ret << "\n";
@@ -587,8 +589,9 @@ public:
                     continue;
                 }
 
-                requestQEntry *newRequest = (requestQEntry *) tempBuffer;
-                ddfsClusterHeader *clusterH = (ddfsClusterHeader *) newRequest->data;
+                //requestQEntry *newRequest = (requestQEntry *) tempBuffer;
+                //ddfsClusterHeader *clusterH = (ddfsClusterHeader *) newRequest->data;
+                ddfsClusterHeader *clusterH = (ddfsClusterHeader *) tempBuffer;
 
                 global_logger_tem << ddfsLogger::LOG_INFO << "TCP(" << remoteNodeHostName << "):: BT: v: " << clusterH->version << ". tOS: " << clusterH->typeOfService << "\n";
                 global_logger_tem << ddfsLogger::LOG_INFO << "TCP(" << remoteNodeHostName << "):: BT: tl:" << clusterH->totalLength << ".ID: " << clusterH->uniqueID << "\n";
@@ -607,8 +610,8 @@ public:
                  * Place the ddfsHeader as well as the data on the response queue.
                  */
                 if((totalLengthOfTheMessage - sizeof(ddfsClusterHeader)) > 0) {
-                    ret = recvfrom(serverSocketFD, (void *) (((uint8_t *) totalMessage) + sizeof(ddfsClusterHeader)),
-                                    (totalLengthOfTheMessage - sizeof(ddfsClusterHeader)), 0,
+                    ret = recvfrom(serverSocketFD, totalMessage,
+                                    totalLengthOfTheMessage, 0,
                                     (struct sockaddr *) &clientAddr, (socklen_t *)&serverAddrLen);
 
                     if(ret == -1) {
@@ -629,6 +632,8 @@ public:
             }
 #endif
 
+                printBuffer(totalMessage, clusterH->totalLength, "TCP:: Complete DDFS Message: ");
+
                 responseQEntry newEntry;
 
                 newEntry.typeOfService = clusterH->typeOfService;
@@ -641,10 +646,8 @@ public:
                 responseQueues[responseQueueIndex].rLock.lock();
                 responseQueues[responseQueueIndex].dataBuffer.push(newEntry);
                 global_logger_tem << ddfsLogger::LOG_INFO << "TCP(" << remoteNodeHostName << "):: BT : Placed the data. Calling subscribers.\n";
-                responseQueues[responseQueueIndex].subscriptions.callSubscription(&newEntry.data, newEntry.totalLength);
+                responseQueues[responseQueueIndex].subscriptions.callSubscription(newEntry.data, newEntry.totalLength);
                 responseQueues[responseQueueIndex].rLock.unlock();
-
-                global_logger_tem << ddfsLogger::LOG_INFO << "TCP(" << remoteNodeHostName << "):: BT : End of while loop. \n";
 
             } /* while loop end */
         } /* else loop end */

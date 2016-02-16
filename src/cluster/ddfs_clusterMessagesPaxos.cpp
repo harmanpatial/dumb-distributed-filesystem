@@ -15,8 +15,6 @@
 #include <cstring>
 #include <stdlib.h>
 
-using namespace std;
-
 #include "ddfs_clusterMessagesPaxos.hpp"
 #include "../global/ddfs_status.hpp"
 
@@ -36,7 +34,7 @@ using namespace std;
 #define MAX_NUM_OF_MESSAGES	4
 #define MAX_SIZE_OF_MESSAGES	(SIZE_OF_MESSAGE * MAX_NUM_OF_MESSAGES) 
 
-ddfsClusterMessagePaxos::ddfsClusterMessagePaxos() {
+void ddfsClusterMessagePaxos::init() {
 	ddfsHeader.version = 111;
 	ddfsHeader.typeOfService = CLUSTER_MESSAGE_TOF_CLUSTER_UNKNOWN;
 	ddfsHeader.totalLength = SIZE_OF_HEADER;
@@ -44,6 +42,10 @@ ddfsClusterMessagePaxos::ddfsClusterMessagePaxos() {
     ddfsHeader.Reserved1 = 250;
     ddfsHeader.Reserved2 = 189;
 	memset(&ddfsMessage, 0, sizeof(ddfsClusterMessage));
+}
+
+ddfsClusterMessagePaxos::ddfsClusterMessagePaxos() {
+    init();
 	message = (void *)malloc(SIZE_OF_HEADER + MAX_SIZE_OF_MESSAGES);
 }
 
@@ -51,10 +53,12 @@ ddfsClusterMessagePaxos::~ddfsClusterMessagePaxos() {
     free(message);
 }
 
-ddfsStatus ddfsClusterMessagePaxos::addMessage(uint16_t messageType, uint64_t proposalNumber, uint64_t lastAcceptedProposalNumber, uint64_t lastAcceptedValue) {
+ddfsStatus ddfsClusterMessagePaxos::addMessage(uint64_t roundNumber, uint16_t messageType,
+            uint64_t proposalNumber, uint64_t lastAcceptedProposalNumber, uint64_t lastAcceptedValue) {
 	ddfsMessage.messageType = messageType;
     ddfsMessage.Reserved1 = 0;
 	/* In case of cluster meta data this is the proposal number */
+    ddfsMessage.roundNumber = roundNumber;
 	ddfsMessage.proposalNumber = proposalNumber;
 	ddfsMessage.lastAcceptedProposalNumber = lastAcceptedProposalNumber;
 	ddfsMessage.lastAcceptedValue = lastAcceptedValue;
@@ -65,7 +69,7 @@ ddfsStatus ddfsClusterMessagePaxos::addMessage(uint16_t messageType, uint64_t pr
 	if(ddfsHeader.totalLength == MAX_SIZE_OF_MESSAGES)
 		return (ddfsStatus(DDFS_FAILURE));
 
-	memcpy((uint8_t *)message + SIZE_OF_HEADER + ddfsHeader.totalLength,
+	memcpy((uint8_t *)message + ddfsHeader.totalLength,
             &ddfsMessage, sizeof(ddfsMessage));
 
 	ddfsHeader.totalLength += SIZE_OF_MESSAGE;
@@ -84,10 +88,15 @@ void ddfsClusterMessagePaxos::returnBuffer(void *outputBuffer) {
 	memcpy((uint8_t *)message + sizeof(ddfsHeader.version) + sizeof(ddfsHeader.typeOfService),
 		&ddfsHeader.totalLength, sizeof(ddfsHeader.totalLength));
 #endif
-    memcpy(outputBuffer, message, SIZE_OF_HEADER + ddfsHeader.totalLength);
+    memcpy(outputBuffer, message, ddfsHeader.totalLength);
 }
 
 uint64_t ddfsClusterMessagePaxos::returnBufferSize() {
     return ddfsHeader.totalLength;
 }
 
+
+void ddfsClusterMessagePaxos::clearBuffer() {
+    bzero(message, sizeof(SIZE_OF_HEADER + MAX_SIZE_OF_MESSAGES));
+    init();
+}

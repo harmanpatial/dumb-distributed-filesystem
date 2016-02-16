@@ -36,25 +36,25 @@ enum clusterMessageTypeOfService {
 
 enum clusterMessageType {
 	CLUSTER_MESSAGE_LE_TYPE_PREPARE = 7,
-	CLUSTER_MESSAGE_LE_TYPE_PROMISE,
-	CLUSTER_MESSAGE_LE_ACCEPT_REQUESTED,
-	CLUSTER_MESSAGE_LE_ACCEPTED,
-	CLUSTER_MESSAGE_LE_LEADER_ELECTED,
+	CLUSTER_MESSAGE_LE_TYPE_PROMISE = 8,
+	CLUSTER_MESSAGE_LE_ACCEPT_REQUESTED = 9,
+	CLUSTER_MESSAGE_LE_ACCEPTED = 10,
+	CLUSTER_MESSAGE_LE_LEADER_ELECTED = 11,
     /*  Addition - Removal of cluster members */
-    CLUSTER_MESSAGE_ADDING_MEMBER,
-    CLUSTER_MESSAGE_REMOVING_MEMBER,
+    CLUSTER_MESSAGE_ADDING_MEMBER = 12,
+    CLUSTER_MESSAGE_REMOVING_MEMBER = 13,
     /*  Replica Responsibility */
-    CLUSTER_MESSAGE_REPLICA_RESPONSIBILTY_REQUEST,
-    CLUSTER_MESSAGE_REPLICA_RESPONSIBILTY_REPLY,
+    CLUSTER_MESSAGE_REPLICA_RESPONSIBILTY_REQUEST = 14,
+    CLUSTER_MESSAGE_REPLICA_RESPONSIBILTY_REPLY = 15,
     /*  File INFO */
-    CLUSTER_MESSAGE_FILE_INFORMATION_REQUEST,
-    CLUSTER_MESSAGE_FILE_INFORMATION_REPLY,
+    CLUSTER_MESSAGE_FILE_INFORMATION_REQUEST = 16,
+    CLUSTER_MESSAGE_FILE_INFORMATION_REPLY = 17,
     /*  Write-ahead log info */
-    CLUSTER_MESSAGE_LOGFILE_INFORMATION_REQUEST,
-    CLUSTER_MESSAGE_LOGFILE_INFORMATION_REPLY,
+    CLUSTER_MESSAGE_LOGFILE_INFORMATION_REQUEST = 18,
+    CLUSTER_MESSAGE_LOGFILE_INFORMATION_REPLY = 19,
     /*  Backup related messsages */
-    CLUSTER_MESSAGE_CREATE_BOOKMARK_REQUEST,
-    CLUSTER_MESSAGE_CREATE_BOOKMARK_REPLY,
+    CLUSTER_MESSAGE_CREATE_BOOKMARK_REQUEST = 20,
+    CLUSTER_MESSAGE_CREATE_BOOKMARK_REPLY = 21,
 };
 
 /******************************************************************
@@ -119,10 +119,11 @@ typedef struct {
 typedef struct {
     uint16_t messageType;	            /* 2 bytes -- enum clusterMessageType */
     uint16_t Reserved1;                 /* 2 bytes */
+    int64_t roundNumber;                /* 8 bytes -- Round Number */
     int64_t proposalNumber;             /* 8 bytes */
     int64_t lastAcceptedProposalNumber; /* 8 bytes */
 	int64_t lastAcceptedValue;			/* 8 bytes This is value that needs to be send in Promise and Accept Command. */
-} __attribute__((packed)) ddfsClusterMessage;    /* Total 28 bytes */
+} __attribute__((packed)) ddfsClusterMessage;    /* Total 36 bytes */
 
 /*  Packet data message */
 /*  \note This should only be used by DDFS clients.
@@ -170,11 +171,16 @@ private:
     ddfsClusterData ddfsData;
 #endif
     void* message;
+    void init();
 public:
 	ddfsClusterMessagePaxos();
 	~ddfsClusterMessagePaxos();
-	virtual ddfsStatus addMessage(uint16_t messageType, uint64_t proposalNumber, uint64_t lastAcceptedProposalNumber, uint64_t lastAcceptedValue);
+	virtual ddfsStatus addMessage(uint64_t roundNumber, uint16_t messageType,
+            uint64_t proposalNumber, uint64_t lastAcceptedProposalNumber,
+            uint64_t lastAcceptedValue);
+
 	virtual void returnBuffer(void *);
+    virtual void clearBuffer();
 	uint64_t returnBufferSize();
 };
 

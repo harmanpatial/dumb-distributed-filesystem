@@ -60,7 +60,7 @@ class ddfsClusterPaxosInstance
 		~ddfsClusterPaxosInstance ();                            /* destructor */    
 
 		/* ====================  ACCESSORS     ======================================= */
-		ddfsStatus execute(uint64_t proposalNumber, uint64_t value, vector <ddfsClusterMemberPaxos *>& allMembers, int *consesusValue);
+		ddfsStatus execute(uint64_t roundNumber, uint64_t proposalNumber, uint64_t value, vector <ddfsClusterMemberPaxos *>& allMembers, int *consesusValue);
 		//ddfsStatus executeAsync(uint64_t proposalNumber, vector <ddfsClusterMemberPaxos *>& participatingMembers, ddfsClusterPaxos& cluster);
 		/* ====================  MUTATORS      ======================================= */
 		void abandon();
@@ -72,13 +72,40 @@ class ddfsClusterPaxosInstance
 			return state;
 		}
 
+		void setState(paxosState newState) {
+            state = newState;
+		}
+
+        string getStateString() {
+            switch (state) {
+                case s_paxosState_NONE:             return "None";
+                case s_paxosState_PREPARE:          return "PREPARE";
+                case s_paxosState_PROMISE_RECV:     return "PROMISE RECV";
+                case s_paxosState_PROMISED:         return "PROMISED";
+                case s_paxosState_ACCEPT_REQUESTED: return "ACCEPT REQUESTED";
+                case s_paxosState_REQUEST_ACCEPTED: return "REQUESTED ACCEPTED";
+                case s_paxosState_COMPLETED:        return "COMPLETED";
+                default:                            return "INVALID";
+            }
+        }
+
 		int getLastPromised() { return lastPromised; }
 		void setLastPromised(int newV) { lastPromised = newV; }
+
 		int getLastAcceptedProposalNumber() { return lastAcceptedProposalNumber; }
 		void setLastAcceptedProposalNumber(int newV) { lastAcceptedProposalNumber = newV; }
+
 		int getLastAcceptedValue() { return lastAcceptedValue; }
 		void setLastAcceptedValue(int newV) { lastAcceptedValue = newV; }
-		void incrementResponses() { responses++; }
+
+		void incrementPromiseCount() { promisesRecieved++; }
+		int getPromiseCount() { return promisesRecieved; }
+        void resetPromiseCount() { promisesRecieved = 0; }
+
+		void incrementAcceptedCount() { acceptedRecieved++; }
+		int getAcceptedCount() { return acceptedRecieved; }
+        void resetAcceptedCount() { acceptedRecieved = 0; }
+
 
 	protected:
 		/* ====================  METHODS       ======================================= */
@@ -90,18 +117,19 @@ class ddfsClusterPaxosInstance
 		ddfsClusterPaxosInstance (const ddfsClusterPaxosInstance &other);   /* copy constructor */
         static const int s_timeout = 2;		// In seconds.
 		static const int s_paxosInstanceInvalid = -1;
-		static const unsigned int s_quorum = 2; // This is a factor value. 2 means totalParticipatingMembers/2. So, half of the participating members.
+		static const unsigned int s_quorum = 2; // This is a factor value. 2 means totalParticipatingMembers/2. So, half of the all members.
 
 		/* ====================  DATA MEMBERS  ======================================= */
 		int internalProposalNumber;
         paxosState state;
         int quorum;
-        int responses;
+        int promisesRecieved;
+        int acceptedRecieved;
 //		list <ddfsClusterMemberPaxos>& participatingMembers;
-		int lastPromised;
-		int lastAcceptedProposalNumber;
-		int lastAcceptedValue;
-		int currentVersionNumber;
+		uint64_t lastPromised;
+		uint64_t lastAcceptedProposalNumber;
+		uint64_t lastAcceptedValue;
+		uint64_t currentVersionNumber;
 
 }; /* -----  end of class ddfsClusterPaxosInstance  ----- */
 

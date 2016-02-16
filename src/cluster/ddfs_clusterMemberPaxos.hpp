@@ -76,12 +76,15 @@ public:
 	int getUniqueIdentification();
 
 	string getHostName();
-#if 0
-    int getLocalSocket();
-#endif
+
 	ddfsStatus sendClusterMetaData(ddfsClusterMessagePaxos *);
     void processingResponses();
     void callback(void *data, int size);
+
+    bool isLocalNode() {
+        return _isLocalNode;
+    }
+
 private:
 	/* Identifies the cluster, of which this member is part of */
 	int clusterID;
@@ -106,9 +109,9 @@ private:
     /* Request and Response queues shared with network layer */
     void *networkPrivatePtr;
 
-	bool local_node;
+	bool _isLocalNode;
 
-    std::vector<std::thread> workingThreadQ;
+    //std::vector<std::thread> workingThreadQ;
 
     ddfsStatus processMessage(ddfsClusterMessage *);
 
@@ -117,13 +120,6 @@ private:
 
     /* HostName of this cluster member */
     string hostName;
-
-    bool isLocalNode() {
-        if(hostName.compare("localhost") == 0)
-            return true;
-
-        return false;
-    }
 
 	ddfsClusterMemberPaxos* localNode;
 	ddfsClusterMemberPaxos *getLocalNode() {

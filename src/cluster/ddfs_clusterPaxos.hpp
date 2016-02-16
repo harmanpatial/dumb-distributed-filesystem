@@ -55,9 +55,12 @@ private:
 	int clusterMemberCount;
 	uint32_t clusterMemberID;
 
-    ddfsClusterPaxosInstance leaderPaxosInstance;
+    ddfsClusterPaxosInstance *leaderPaxosInstance;
+    int64_t internalRoundNumber;
+
 public:
 	ddfsStatus init();
+    /* All the cluster Members including the local Node */
 	vector<ddfsClusterMemberPaxos *> clusterMembers;
 	/*
 	 * Function that would contain the logic to perform leader election.
@@ -69,6 +72,15 @@ public:
 	 */
 	ddfsStatus leaderElection();
 	uint64_t getProposalNumber();
+
+    void incrementRoundNumber() {
+        internalRoundNumber++;
+    }
+
+    int64_t getRoundNumber() {
+       return internalRoundNumber;
+    }
+
 	void asyncEventHandling(void *buffer, int bufferCount);
 	ddfsStatus processMessage (ddfsClusterMemberPaxos *member, ddfsClusterMessage *message);
 	ddfsStatus addMember(string addHostName);
@@ -85,7 +97,7 @@ public:
 	ddfsClusterPaxos(string localHostName);
 	~ddfsClusterPaxos();
 	static const int s_clusterIDInvalid = -1;
-	void setLeader(ddfsClusterMemberPaxos* latest_leader, int pr);
+	void setLeader(int leaderMemberID);
 }; // class end
 
 #endif /* Ending DDFS_CLUSTER_PAXOS_H */

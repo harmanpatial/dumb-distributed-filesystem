@@ -43,7 +43,7 @@ class ddfsLogger {
 		 *
 		 * @return reference to a class object
 		 */
-		static ddfsLogger& getInstance(const string fname = "/tmp/ddfs.log");
+		static ddfsLogger& getInstance(const string fname = "/var/log/ddfs.log");
 		
 		/* Log Message */
 		friend ddfsLogger &operator << (ddfsLogger &logger, const e_logType l_type);

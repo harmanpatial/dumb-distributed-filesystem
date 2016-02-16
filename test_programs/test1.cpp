@@ -1,8 +1,10 @@
 #include <iostream>
+#include <unistd.h>
 
 #include "../src/global/ddfs_status.hpp"
 #include "../src/global/ddfs_global.hpp"
 #include "../src/cluster/ddfs_clusterPaxos.hpp"
+#include "../src/cluster/ddfs_clusterMemberPaxos.hpp"
 
 using namespace std;
 
@@ -18,7 +20,6 @@ int main(int argc, const char *argv[])
 
 	cout << "Red initalize : " << r1.initialize() << "\n";
 
-
 	ddfsGlobal::initialize();
 
 	ddfsClusterPaxos *cluster = new ddfsClusterPaxos("192.168.2.16");
@@ -32,7 +33,7 @@ int main(int argc, const char *argv[])
     cluster->addMember("192.168.2.14");
 
     cout << "Sleeping for 4 seconds.\n";
-	sleep(3);
+	sleep(4);
 
 	cout << "Starting the leader election : \n";
 	status = cluster->leaderElection();
@@ -42,10 +43,6 @@ int main(int argc, const char *argv[])
 	else
 		cout << "Leader Election failed.\n";
 
-#if 0
-	cout << "Trying to add testNode-2 \n";
-	cluster->addMember("192.168.2.14");
-#endif
 	int inputValue;
 	cin >> inputValue;
 
