@@ -3,7 +3,7 @@ CC=g++
 CFLAGS= -std=c++11
 #-fpic -- This is only required to build shared library 
 
-INCLUDE = -I/home/harman/ddfs/src/global
+INCLUDE = -I ../src/global
 LIBS	= -L/usr/local/lib
 RM	= /bin/rm
 
